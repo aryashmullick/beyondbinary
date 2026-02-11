@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ColorCodingSettings } from "@/components/ColorCodingSettings";
 import { StatusBar } from "@/components/StatusBar";
 import { MinimizedIcon } from "@/components/MinimizedIcon";
 import { checkHealth, getLegend, type LegendItem } from "@/lib/api";
-import { Minus } from "lucide-react";
+import { Minus, Sparkles } from "lucide-react";
 
 // ─── Message Types ─────────────────────────────────────────────────────────────
 
@@ -42,28 +41,22 @@ function sendToContent(msg: MessageToContent) {
 // ─── Main App ──────────────────────────────────────────────────────────────────
 
 export const App: React.FC = () => {
-  // Panel visibility
   const [isOpen, setIsOpen] = useState(true);
-
-  // Backend status
   const [backendConnected, setBackendConnected] = useState(false);
   const [legend, setLegend] = useState<LegendItem[]>([]);
 
-  // Color coding state
   const [colorCodingEnabled, setColorCodingEnabled] = useState(false);
   const [colorScheme, setColorScheme] = useState("default");
   const [emphasis, setEmphasis] = useState("normal");
   const [showFunctionWords, setShowFunctionWords] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Director mode state
   const [directorModeEnabled, setDirectorModeEnabled] = useState(false);
   const [isTracking, setIsTracking] = useState(false);
   const [crowdingIntensity, setCrowdingIntensity] = useState("medium");
 
   // ─── Effects ───────────────────────────────────────────────────────────────
 
-  // Check backend health on mount
   useEffect(() => {
     const check = async () => {
       const healthy = await checkHealth();
@@ -78,18 +71,15 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Update legend when scheme changes
   useEffect(() => {
     if (backendConnected) {
       getLegend(colorScheme).then(setLegend).catch(console.error);
     }
   }, [colorScheme, backendConnected]);
 
-  // Listen for messages from content script
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       if (event.data?.source !== "wit-content") return;
-
       switch (event.data.type) {
         case "PROCESSING_START":
           setIsProcessing(true);
@@ -102,7 +92,6 @@ export const App: React.FC = () => {
           break;
       }
     };
-
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
   }, []);
@@ -206,42 +195,50 @@ export const App: React.FC = () => {
             initial={{ x: "100%", opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "100%", opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed top-4 right-4 bottom-4 w-[360px] z-[999999] flex flex-col bg-wit-bg rounded-wit-lg shadow-wit-lg border border-wit-border overflow-hidden"
-            style={{ fontFamily: '"Inter", system-ui, sans-serif' }}
+            transition={{ type: "spring", damping: 28, stiffness: 260 }}
+            className="fixed bottom-3 right-3 w-[320px] max-h-[calc(100vh-24px)] z-[999999] flex flex-col rounded-2xl overflow-hidden"
+            style={{
+              fontFamily: '"Inter", system-ui, sans-serif',
+              background: "#FEFCF8",
+              border: "1px solid #E2D9CA",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06)",
+            }}
           >
-            {/* ─── Header ─────────────────────────────────────────────── */}
-            <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-wit-primary/5 to-wit-secondary/5 border-b border-wit-border">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-wit-primary to-wit-secondary">
-                  <span className="text-white font-display font-bold text-sm">
-                    W
-                  </span>
-                </div>
-                <div>
-                  <h1 className="font-display font-bold text-wit-text text-[1.05rem] tracking-tight">
-                    WIT
-                  </h1>
-                  <p className="font-display text-[10px] text-wit-text-muted tracking-wide uppercase">
-                    Words In Technicolor
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsOpen(false)}
-                  className="h-8 w-8 text-wit-text-muted hover:text-wit-text"
-                  title="Minimize"
+            {/* ─── Compact Title Bar ─────────────────────────────────── */}
+            <div className="flex items-center justify-between px-4 py-2"
+              style={{ borderBottom: "1px solid #EDE6D8" }}
+            >
+              <div className="flex items-center gap-2">
+                <h1
+                  className="font-display font-extrabold text-[15px] tracking-tight"
+                  style={{
+                    background: "linear-gradient(135deg, #4A6FA5, #6B9E6B, #E8A838)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                  }}
                 >
-                  <Minus className="w-4 h-4" />
-                </Button>
+                  WIT
+                </h1>
+                {isProcessing && (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  </motion.div>
+                )}
               </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="flex items-center justify-center w-6 h-6 rounded-md hover:bg-black/5 transition-colors text-stone-400 hover:text-stone-600"
+                title="Minimize"
+              >
+                <Minus className="w-3.5 h-3.5" />
+              </button>
             </div>
 
             {/* ─── Content ────────────────────────────────────────────── */}
-            <div className="flex-1 overflow-y-auto wit-scrollbar px-4 py-4">
+            <div className="overflow-y-auto wit-scrollbar px-4 py-3">
               <ColorCodingSettings
                 enabled={colorCodingEnabled}
                 onToggle={handleColorToggle}
@@ -264,7 +261,6 @@ export const App: React.FC = () => {
             {/* ─── Footer ─────────────────────────────────────────────── */}
             <StatusBar
               backendConnected={backendConnected}
-              gazeConnected={directorModeEnabled && isTracking}
               colorCodingActive={colorCodingEnabled}
               directorModeActive={directorModeEnabled}
             />

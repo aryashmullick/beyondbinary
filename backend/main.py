@@ -70,11 +70,11 @@ class GazeConfigRequest(BaseModel):
 async def lifespan(app: FastAPI):
     """Download NLTK data on startup for fast first requests."""
     from analysis.sentence_analyzer import ensure_nltk_data
-    print("⏳ Downloading NLTK data...")
+    print("[WIT] Downloading NLTK data...")
     ensure_nltk_data()
-    print("✅ NLTK ready. Server ready.")
+    print("[WIT] NLTK ready. Server ready.")
     yield
-    print("👋 Shutting down WIT backend.")
+    print("[WIT] Shutting down WIT backend.")
 
 
 # ─── FastAPI App ────────────────────────────────────────────────────────────────

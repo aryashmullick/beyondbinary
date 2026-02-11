@@ -1,57 +1,56 @@
 import React from "react";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Server, Wifi, WifiOff } from "lucide-react";
 
 interface StatusBarProps {
   backendConnected: boolean;
-  gazeConnected: boolean;
   colorCodingActive: boolean;
   directorModeActive: boolean;
 }
 
 export const StatusBar: React.FC<StatusBarProps> = ({
   backendConnected,
-  gazeConnected,
   colorCodingActive,
   directorModeActive,
 }) => {
   return (
-    <div className="flex items-center justify-between px-4 py-2 bg-wit-surface/50 border-t border-wit-border rounded-b-wit-lg">
-      <div className="flex items-center gap-2">
-        {/* Backend Status */}
-        <div
-          className="flex items-center gap-1.5"
-          title={backendConnected ? "Backend connected" : "Backend offline"}
-        >
-          {backendConnected ? (
-            <Wifi className="w-3 h-3 text-wit-success" />
-          ) : (
-            <WifiOff className="w-3 h-3 text-wit-danger" />
-          )}
-          <span className="font-display text-[10px] text-wit-text-muted">
-            {backendConnected ? "Connected" : "Offline"}
-          </span>
-        </div>
+    <div
+      className="flex items-center justify-between px-4 py-1.5 rounded-b-2xl"
+      style={{
+        background: "#F5F0E8",
+        borderTop: "1px solid #EDE6D8",
+      }}
+    >
+      <div
+        className="flex items-center gap-1.5"
+        title={backendConnected ? "Backend connected" : "Backend offline"}
+      >
+        <span
+          className="block w-[6px] h-[6px] rounded-full"
+          style={{
+            background: backendConnected ? "#5A8F5A" : "#C75C5C",
+            boxShadow: `0 0 4px ${backendConnected ? "rgba(90,143,90,0.4)" : "rgba(199,92,92,0.4)"}`,
+          }}
+        />
+        <span className="font-display text-[11px] text-stone-400">
+          {backendConnected ? "Connected" : "Offline"}
+        </span>
       </div>
 
       <div className="flex items-center gap-1.5">
         {colorCodingActive && (
-          <Badge variant="outline" className="text-[10px] py-0 h-5">
-            🎨 Colors
-          </Badge>
+          <span
+            className="px-2 py-[2px] rounded-full text-[10px] font-display font-semibold text-white"
+            style={{ background: "#4A6FA5" }}
+          >
+            Colors
+          </span>
         )}
         {directorModeActive && (
-          <Badge variant="outline" className="text-[10px] py-0 h-5">
-            � Director
-          </Badge>
+          <span
+            className="px-2 py-[2px] rounded-full text-[10px] font-display font-semibold text-white"
+            style={{ background: "#6B9E6B" }}
+          >
+            Director
+          </span>
         )}
       </div>
     </div>

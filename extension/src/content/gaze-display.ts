@@ -144,12 +144,7 @@ function rebuildWordCache(): void {
   if (colored.length > 0) {
     for (const span of colored) {
       const r = span.getBoundingClientRect();
-      if (
-        r.width > 0 &&
-        r.height > 0 &&
-        r.bottom >= -200 &&
-        r.top <= window.innerHeight + 200
-      ) {
+      if (r.width > 0 && r.height > 0) {
         wordCache.push({
           el: span,
           cx: r.left + r.width / 2,
@@ -166,12 +161,7 @@ function rebuildWordCache(): void {
   if (existing.length > 0) {
     for (const span of existing) {
       const r = span.getBoundingClientRect();
-      if (
-        r.width > 0 &&
-        r.height > 0 &&
-        r.bottom >= -200 &&
-        r.top <= window.innerHeight + 200
-      ) {
+      if (r.width > 0 && r.height > 0) {
         wordCache.push({
           el: span,
           cx: r.left + r.width / 2,
@@ -186,27 +176,31 @@ function rebuildWordCache(): void {
   }
 
   // ── First time with no colour coding — wrap text nodes ───────────────
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
-    acceptNode(node) {
-      const parent = node.parentElement;
-      if (!parent) return NodeFilter.FILTER_REJECT;
-      if (
-        parent.closest(
-          "#wit-panel-container, #wit-panel-iframe, #wit-tracker-iframe, " +
-            "#wit-gaze-overlay, #wit-focus-dot, script, style, noscript, svg, canvas",
+  const walker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode(node) {
+        const parent = node.parentElement;
+        if (!parent) return NodeFilter.FILTER_REJECT;
+        if (
+          parent.closest(
+            "#wit-panel-container, #wit-panel-iframe, #wit-tracker-iframe, " +
+              "#wit-gaze-overlay, #wit-focus-dot, script, style, noscript, svg, canvas",
+          )
         )
-      )
-        return NodeFilter.FILTER_REJECT;
-      if (parent.classList.contains("wit-word")) return NodeFilter.FILTER_REJECT;
-      const text = node.textContent;
-      if (!text || !text.trim()) return NodeFilter.FILTER_REJECT;
-      const rect = parent.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) return NodeFilter.FILTER_REJECT;
-      if (rect.bottom < -200 || rect.top > window.innerHeight + 200)
-        return NodeFilter.FILTER_REJECT;
-      return NodeFilter.FILTER_ACCEPT;
+          return NodeFilter.FILTER_REJECT;
+        if (parent.classList.contains("wit-word"))
+          return NodeFilter.FILTER_REJECT;
+        const text = node.textContent;
+        if (!text || !text.trim()) return NodeFilter.FILTER_REJECT;
+        const rect = parent.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0)
+          return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      },
     },
-  });
+  );
 
   const textNodes: Text[] = [];
   let node: Node | null;
@@ -223,7 +217,11 @@ function rebuildWordCache(): void {
         tn.parentNode?.replaceChild(span, tn);
         const r = span.getBoundingClientRect();
         if (r.width > 0 && r.height > 0) {
-          wordCache.push({ el: span, cx: r.left + r.width / 2, cy: r.top + r.height / 2 });
+          wordCache.push({
+            el: span,
+            cx: r.left + r.width / 2,
+            cy: r.top + r.height / 2,
+          });
         }
       }
       continue;
@@ -245,13 +243,12 @@ function rebuildWordCache(): void {
   const allWords = document.querySelectorAll<HTMLElement>("span.wit-word");
   for (const span of allWords) {
     const r = span.getBoundingClientRect();
-    if (
-      r.width > 0 &&
-      r.height > 0 &&
-      r.bottom >= -200 &&
-      r.top <= window.innerHeight + 200
-    ) {
-      wordCache.push({ el: span, cx: r.left + r.width / 2, cy: r.top + r.height / 2 });
+    if (r.width > 0 && r.height > 0) {
+      wordCache.push({
+        el: span,
+        cx: r.left + r.width / 2,
+        cy: r.top + r.height / 2,
+      });
     }
   }
   cacheValid = true;
@@ -292,7 +289,10 @@ export function initGazeDisplay(): void {
 
   // Invalidate cache on scroll / resize
   scrollHandler = () => invalidateCache();
-  window.addEventListener("scroll", scrollHandler, { passive: true, capture: true });
+  window.addEventListener("scroll", scrollHandler, {
+    passive: true,
+    capture: true,
+  });
   window.addEventListener("resize", scrollHandler, { passive: true });
 
   // Also watch for DOM mutations (e.g. lazy-loaded content)
@@ -337,7 +337,9 @@ export function destroyGazeDisplay(): void {
   stopGazeDisplay();
 
   if (scrollHandler) {
-    window.removeEventListener("scroll", scrollHandler, { capture: true } as any);
+    window.removeEventListener("scroll", scrollHandler, {
+      capture: true,
+    } as any);
     window.removeEventListener("resize", scrollHandler);
     scrollHandler = null;
   }
