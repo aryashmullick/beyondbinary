@@ -21,7 +21,7 @@ A Chrome extension that helps dyslexic readers by color-coding text on any webpa
 ### 1. Clone the repo
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/aryashmullick/beyondbinary.git
 cd WIT-new
 ```
 
