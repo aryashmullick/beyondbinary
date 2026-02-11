@@ -185,6 +185,5 @@ WIT-new/
 | Extension     | Chrome Manifest V3                               |
 | Frontend      | React, TypeScript, Vite                          |
 | Styling       | Tailwind CSS, shadcn/ui, Framer Motion           |
-| Eye Tracking  | WebGazer.js (client) + custom processor (server) |
 | NLP           | spaCy (en_core_web_sm)                           |
 | Communication | REST API + WebSocket                             |
