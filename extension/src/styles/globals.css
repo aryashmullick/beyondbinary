@@ -1,0 +1,43 @@
+@import url('https://fonts.cdnfonts.com/css/opendyslexic');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Custom Layer ──────────────────────────────────────────────────────────── */
+
+@layer base {
+  :root {
+    --wit-bg: 48 100% 98%;
+    --wit-surface: 40 100% 95%;
+    --wit-border: 33 37% 85%;
+    --wit-text: 30 8% 16%;
+    --wit-text-muted: 20 5% 40%;
+    --wit-primary: 214 37% 47%;
+    --wit-secondary: 105 21% 52%;
+    --wit-accent: 37 79% 56%;
+    --wit-danger: 0 41% 57%;
+    --wit-radius: 0.75rem;
+  }
+}
+
+@layer utilities {
+  .wit-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--wit-border)) transparent;
+  }
+  
+  .wit-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .wit-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .wit-scrollbar::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--wit-border));
+    border-radius: 20px;
+  }
+}
