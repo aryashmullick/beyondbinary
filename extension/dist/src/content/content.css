@@ -1,0 +1,48 @@
+/* WIT Content Script Styles */
+
+/* Panel container - no interference with page */
+#wit-panel-container {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 400px !important;
+  z-index: 999999 !important;
+  pointer-events: none !important;
+}
+
+#wit-panel-container > * {
+  pointer-events: auto !important;
+}
+
+/* Colored text styles */
+.wit-colored {
+  transition:
+    color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.wit-colored:hover {
+  opacity: 1 !important;
+  filter: brightness(1.1);
+}
+
+.wit-colored-wrapper {
+  display: inline;
+}
+
+/* Gaze overlay */
+#wit-gaze-overlay {
+  pointer-events: none !important;
+}
+
+/* Focus dot */
+#wit-focus-dot {
+  pointer-events: none !important;
+}
+
+/* Word spans injected by gaze display – visual-only transitions, no layout shift */
+span.wit-word {
+  display: inline;
+  transition: background 0.1s ease;
+}

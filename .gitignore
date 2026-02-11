@@ -15,7 +15,6 @@ nltk_data/
 
 # ─── Node / Extension ──────────────────────────────────────────────────────────
 node_modules/
-extension/dist/
 extension/.vite/
 *.tsbuildinfo
 
