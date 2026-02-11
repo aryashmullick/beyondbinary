@@ -1,6 +1,12 @@
 import React from "react";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Server, Wifi, WifiOff } from "lucide-react";
 
@@ -21,7 +27,10 @@ export const StatusBar: React.FC<StatusBarProps> = ({
     <div className="flex items-center justify-between px-4 py-2 bg-wit-surface/50 border-t border-wit-border rounded-b-wit-lg">
       <div className="flex items-center gap-2">
         {/* Backend Status */}
-        <div className="flex items-center gap-1.5" title={backendConnected ? "Backend connected" : "Backend offline"}>
+        <div
+          className="flex items-center gap-1.5"
+          title={backendConnected ? "Backend connected" : "Backend offline"}
+        >
           {backendConnected ? (
             <Wifi className="w-3 h-3 text-wit-success" />
           ) : (
@@ -41,7 +50,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         )}
         {directorModeActive && (
           <Badge variant="outline" className="text-[10px] py-0 h-5">
-            👁 Director
+            � Director
           </Badge>
         )}
       </div>

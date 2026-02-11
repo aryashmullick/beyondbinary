@@ -94,7 +94,7 @@ export async function colorizeText(
   text: string,
   scheme: string = "default",
   emphasis: string = "normal",
-  showFunctionWords: boolean = true
+  showFunctionWords: boolean = true,
 ): Promise<ColorizeResponse> {
   return apiFetch<ColorizeResponse>("/api/colorize", {
     method: "POST",
@@ -111,7 +111,7 @@ export async function colorizeBatch(
   texts: string[],
   scheme: string = "default",
   emphasis: string = "normal",
-  showFunctionWords: boolean = true
+  showFunctionWords: boolean = true,
 ): Promise<BatchColorizeResponse> {
   return apiFetch<BatchColorizeResponse>("/api/colorize/batch", {
     method: "POST",
@@ -124,8 +124,12 @@ export async function colorizeBatch(
   });
 }
 
-export async function getLegend(scheme: string = "default"): Promise<LegendItem[]> {
-  const res = await apiFetch<{ legend: LegendItem[] }>(`/api/legend?scheme=${scheme}`);
+export async function getLegend(
+  scheme: string = "default",
+): Promise<LegendItem[]> {
+  const res = await apiFetch<{ legend: LegendItem[] }>(
+    `/api/legend?scheme=${scheme}`,
+  );
   return res.legend;
 }
 
@@ -184,12 +188,14 @@ export class GazeWebSocket {
 
   sendGaze(x: number, y: number, timestamp?: number): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({
-        type: "gaze",
-        x,
-        y,
-        timestamp: timestamp ?? Date.now(),
-      }));
+      this.ws.send(
+        JSON.stringify({
+          type: "gaze",
+          x,
+          y,
+          timestamp: timestamp ?? Date.now(),
+        }),
+      );
     }
   }
 
@@ -200,10 +206,12 @@ export class GazeWebSocket {
     crowdingIntensity?: string;
   }): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({
-        type: "config",
-        config,
-      }));
+      this.ws.send(
+        JSON.stringify({
+          type: "config",
+          config,
+        }),
+      );
     }
   }
 

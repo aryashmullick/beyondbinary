@@ -1,30 +1,34 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./src/**/*.{ts,tsx,html}",
-  ],
+  content: ["./src/**/*.{ts,tsx,html}"],
   theme: {
     extend: {
       colors: {
         // Dyslexia-friendly palette
         wit: {
-          bg: "#FFFEF7",           // Warm cream background
-          surface: "#FFF8E7",      // Slightly warmer surface
-          border: "#E8DCC8",       // Warm border
-          text: "#2D2A26",         // Warm dark text (not pure black)
+          bg: "#FFFEF7", // Warm cream background
+          surface: "#FFF8E7", // Slightly warmer surface
+          border: "#E8DCC8", // Warm border
+          text: "#2D2A26", // Warm dark text (not pure black)
           "text-muted": "#6B6560", // Muted text
-          primary: "#4A6FA5",      // Calm blue
+          primary: "#4A6FA5", // Calm blue
           "primary-hover": "#3D5D8A",
-          secondary: "#7B9E6B",    // Gentle green
-          accent: "#E8A838",       // Warm amber
-          danger: "#C75C5C",       // Soft red
-          success: "#6B9E6B",      // Success green
+          secondary: "#7B9E6B", // Gentle green
+          accent: "#E8A838", // Warm amber
+          danger: "#C75C5C", // Soft red
+          success: "#6B9E6B", // Success green
         },
       },
       fontFamily: {
         // OpenDyslexic is commonly recommended for dyslexia
-        dyslexic: ['"OpenDyslexic"', '"Comic Sans MS"', '"Lexie Readable"', 'Verdana', 'sans-serif'],
-        display: ['"Inter"', 'system-ui', 'sans-serif'],
+        dyslexic: [
+          '"OpenDyslexic"',
+          '"Comic Sans MS"',
+          '"Lexie Readable"',
+          "Verdana",
+          "sans-serif",
+        ],
+        display: ['"Inter"', "system-ui", "sans-serif"],
       },
       fontSize: {
         // Slightly larger base sizes for readability

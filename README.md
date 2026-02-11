@@ -70,6 +70,7 @@ npm run build
 ## ✨ Features
 
 ### 🎨 Feature 1: Intelligent Color Coding
+
 - **Sentence-level NLP analysis** — not just word database lookup
 - Uses spaCy for POS tagging, dependency parsing, and named entity recognition
 - Colors reflect **word type** (nouns=blue, verbs=green, adjectives=amber, etc.)
@@ -79,6 +80,7 @@ npm run build
 - Option to dim function words (the, is, and...) for focus on content words
 
 ### 👁️ Feature 2: Director Mode (Eye Tracking)
+
 - **WebGazer.js** webcam-based eye tracking
 - Real-time **gaze-contingent display** to reduce visual crowding
 - **Fixation detection** with velocity-threshold algorithm
@@ -91,6 +93,7 @@ npm run build
 - Adjustable **focus intensity** and **gaze smoothing**
 
 ### 🎯 UI
+
 - **Side panel** that auto-opens on any website
 - **Minimizable** to a floating circular icon
 - Built with **shadcn/ui + Radix UI + Framer Motion + Tailwind**
@@ -101,26 +104,26 @@ npm run build
 
 ## 🔧 API Reference
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/colorize` | POST | Colorize text with NLP analysis |
-| `/api/colorize/batch` | POST | Batch colorize multiple text blocks |
-| `/api/analyze` | POST | Raw NLP analysis without colors |
-| `/api/schemes` | GET | Available color schemes |
-| `/api/legend` | GET | Color legend for a scheme |
-| `/ws/gaze` | WebSocket | Real-time gaze data processing |
-| `/health` | GET | Health check |
+| Endpoint              | Method    | Description                         |
+| --------------------- | --------- | ----------------------------------- |
+| `/api/colorize`       | POST      | Colorize text with NLP analysis     |
+| `/api/colorize/batch` | POST      | Batch colorize multiple text blocks |
+| `/api/analyze`        | POST      | Raw NLP analysis without colors     |
+| `/api/schemes`        | GET       | Available color schemes             |
+| `/api/legend`         | GET       | Color legend for a scheme           |
+| `/ws/gaze`            | WebSocket | Real-time gaze data processing      |
+| `/health`             | GET       | Health check                        |
 
 ---
 
 ## 📦 Tech Stack
 
-| Component | Technology |
-|---|---|
-| Backend | Python, FastAPI, spaCy, uvicorn |
-| Extension | Chrome Manifest V3 |
-| Frontend | React, TypeScript, Vite |
-| Styling | Tailwind CSS, shadcn/ui, Framer Motion |
-| Eye Tracking | WebGazer.js (client) + custom processor (server) |
-| NLP | spaCy (en_core_web_sm) |
-| Communication | REST API + WebSocket |
+| Component     | Technology                                       |
+| ------------- | ------------------------------------------------ |
+| Backend       | Python, FastAPI, spaCy, uvicorn                  |
+| Extension     | Chrome Manifest V3                               |
+| Frontend      | React, TypeScript, Vite                          |
+| Styling       | Tailwind CSS, shadcn/ui, Framer Motion           |
+| Eye Tracking  | WebGazer.js (client) + custom processor (server) |
+| NLP           | spaCy (en_core_web_sm)                           |
+| Communication | REST API + WebSocket                             |

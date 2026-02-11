@@ -1,17 +1,27 @@
 /**
  * WIT Content Script - Entry point injected into every page.
- * Manages the panel iframe, coordinates colorizer, eye tracker, and gaze display.
+ * Manages the panel iframe, coordinates colorizer, cursor tracker, and gaze display.
  */
 
 import { colorizeDocument, removeColorization, recolorize } from "./colorizer";
-import { initEyeTracker, startTracking, stopTracking, runCalibration, destroyEyeTracker } from "./eye-tracker";
-import { initGazeDisplay, startGazeDisplay, stopGazeDisplay, updateGazeDisplay, destroyGazeDisplay } from "./gaze-display";
-import { GazeWebSocket, type GazeUpdate } from "@/lib/api";
+import {
+  initCursorTracker,
+  startTracking,
+  stopTracking,
+  destroyCursorTracker,
+} from "./eye-tracker";
+import {
+  initGazeDisplay,
+  startGazeDisplay,
+  stopGazeDisplay,
+  updateGaze,
+  setIntensity,
+  destroyGazeDisplay,
+} from "./gaze-display";
 
 // ─── State ─────────────────────────────────────────────────────────────────────
 
 let panelIframe: HTMLIFrameElement | null = null;
-let gazeWs: GazeWebSocket | null = null;
 
 // Settings
 let colorSettings = {
@@ -24,7 +34,6 @@ let colorSettings = {
 let directorSettings = {
   enabled: false,
   crowdingIntensity: "medium",
-  gazeSmoothing: 5,
 };
 
 // ─── Panel Injection ───────────────────────────────────────────────────────────
@@ -76,8 +85,12 @@ function handlePanelMessage(event: MessageEvent): void {
       if (msg.enabled) {
         sendToPanel({ source: "wit-content", type: "PROCESSING_START" });
         colorizeDocument(msg.scheme, msg.emphasis, msg.showFunctionWords)
-          .then(() => sendToPanel({ source: "wit-content", type: "PROCESSING_DONE" }))
-          .catch(() => sendToPanel({ source: "wit-content", type: "PROCESSING_DONE" }));
+          .then(() =>
+            sendToPanel({ source: "wit-content", type: "PROCESSING_DONE" }),
+          )
+          .catch(() =>
+            sendToPanel({ source: "wit-content", type: "PROCESSING_DONE" }),
+          );
       } else {
         removeColorization();
       }
@@ -91,7 +104,10 @@ function handlePanelMessage(event: MessageEvent): void {
         sendToPanel({ source: "wit-content", type: "PROCESSING_START" });
         recolorize(msg.scheme, msg.emphasis, msg.showFunctionWords);
         // The recolorize is debounced, we'll just clear processing after a delay
-        setTimeout(() => sendToPanel({ source: "wit-content", type: "PROCESSING_DONE" }), 2000);
+        setTimeout(
+          () => sendToPanel({ source: "wit-content", type: "PROCESSING_DONE" }),
+          2000,
+        );
       }
       break;
 
@@ -99,7 +115,6 @@ function handlePanelMessage(event: MessageEvent): void {
       directorSettings = {
         enabled: msg.enabled,
         crowdingIntensity: msg.crowdingIntensity,
-        gazeSmoothing: msg.gazeSmoothing,
       };
       if (msg.enabled) {
         startDirectorMode();
@@ -110,18 +125,7 @@ function handlePanelMessage(event: MessageEvent): void {
 
     case "UPDATE_DIRECTOR_SETTINGS":
       directorSettings.crowdingIntensity = msg.crowdingIntensity;
-      directorSettings.gazeSmoothing = msg.gazeSmoothing;
-      // Update WebSocket config
-      gazeWs?.sendConfig({
-        crowdingIntensity: msg.crowdingIntensity,
-        smoothingWindow: msg.gazeSmoothing,
-      });
-      break;
-
-    case "START_CALIBRATION":
-      runCalibration(() => {
-        sendToPanel({ source: "wit-content", type: "CALIBRATION_DONE" });
-      });
+      setIntensity(msg.crowdingIntensity);
       break;
   }
 }
@@ -132,51 +136,37 @@ function sendToPanel(msg: any): void {
 
 // ─── Director Mode ─────────────────────────────────────────────────────────────
 
-async function startDirectorMode(): Promise<void> {
-  // Initialize gaze display
+function startDirectorMode(): void {
+  // Initialize gaze display (client-side word highlighting)
   initGazeDisplay();
+  setIntensity(directorSettings.crowdingIntensity);
 
-  // Initialize gaze WebSocket
-  gazeWs = new GazeWebSocket();
-  gazeWs.connect((update: GazeUpdate) => {
-    updateGazeDisplay(update);
+  // Initialize cursor tracker — mouse position drives highlighting
+  initCursorTracker((x, y, _timestamp) => {
+    updateGaze(x, y);
   });
 
-  // Initialize eye tracker
-  const success = await initEyeTracker(
-    // Gaze callback - send to backend via WebSocket
-    (x, y, timestamp) => {
-      gazeWs?.sendGaze(x, y, timestamp);
-    },
-    // Status callback
-    (status) => {
-      sendToPanel({ source: "wit-content", type: "WEBCAM_STATUS", status });
-    }
-  );
+  // Start immediately — no webcam, no calibration
+  startTracking();
+  startGazeDisplay();
 
-  if (success) {
-    const trackingStarted = await startTracking();
-    if (trackingStarted) {
-      startGazeDisplay();
-      sendToPanel({ source: "wit-content", type: "TRACKING_STATUS", active: true });
-
-      // Configure gaze processing
-      gazeWs?.sendConfig({
-        crowdingIntensity: directorSettings.crowdingIntensity,
-        smoothingWindow: directorSettings.gazeSmoothing,
-      });
-    }
-  }
+  sendToPanel({
+    source: "wit-content",
+    type: "TRACKING_STATUS",
+    active: true,
+  });
 }
 
 function stopDirectorMode(): void {
   stopTracking();
   stopGazeDisplay();
-  gazeWs?.disconnect();
-  gazeWs = null;
-  destroyEyeTracker();
+  destroyCursorTracker();
   destroyGazeDisplay();
-  sendToPanel({ source: "wit-content", type: "TRACKING_STATUS", active: false });
+  sendToPanel({
+    source: "wit-content",
+    type: "TRACKING_STATUS",
+    active: false,
+  });
 }
 
 // ─── Initialization ────────────────────────────────────────────────────────────
@@ -197,7 +187,8 @@ function init(): void {
     if (msg.type === "TOGGLE_PANEL") {
       const container = document.getElementById("wit-panel-container");
       if (container) {
-        container.style.display = container.style.display === "none" ? "block" : "none";
+        container.style.display =
+          container.style.display === "none" ? "block" : "none";
       }
       sendResponse({ success: true });
     }

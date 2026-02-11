@@ -3,17 +3,42 @@
  * Walks the DOM, extracts text, sends to backend for analysis, and applies colors.
  */
 
-import { colorizeBatch, type ColorizedSentence, type ColorizedToken } from "@/lib/api";
+import {
+  colorizeBatch,
+  type ColorizedSentence,
+  type ColorizedToken,
+} from "@/lib/api";
 
 // Elements to skip
 const SKIP_TAGS = new Set([
-  "SCRIPT", "STYLE", "NOSCRIPT", "IFRAME", "OBJECT", "EMBED",
-  "SVG", "CANVAS", "VIDEO", "AUDIO", "IMG", "BR", "HR",
-  "INPUT", "TEXTAREA", "SELECT", "BUTTON", "CODE", "PRE",
-  "WIT-PANEL", "WIT-OVERLAY",
+  "SCRIPT",
+  "STYLE",
+  "NOSCRIPT",
+  "IFRAME",
+  "OBJECT",
+  "EMBED",
+  "SVG",
+  "CANVAS",
+  "VIDEO",
+  "AUDIO",
+  "IMG",
+  "BR",
+  "HR",
+  "INPUT",
+  "TEXTAREA",
+  "SELECT",
+  "BUTTON",
+  "CODE",
+  "PRE",
+  "WIT-PANEL",
+  "WIT-OVERLAY",
 ]);
 
-const SKIP_CLASSES = new Set(["wit-colored", "wit-panel-container", "wit-gaze-overlay"]);
+const SKIP_CLASSES = new Set([
+  "wit-colored",
+  "wit-panel-container",
+  "wit-gaze-overlay",
+]);
 
 // Store original state for cleanup
 interface OriginalNode {
@@ -30,29 +55,25 @@ let isColorizing = false;
  */
 function getTextNodes(root: Node): Text[] {
   const textNodes: Text[] = [];
-  const walker = document.createTreeWalker(
-    root,
-    NodeFilter.SHOW_TEXT,
-    {
-      acceptNode(node) {
-        const parent = node.parentElement;
-        if (!parent) return NodeFilter.FILTER_REJECT;
-        if (SKIP_TAGS.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
-        if (parent.closest("[contenteditable]")) return NodeFilter.FILTER_REJECT;
-        for (const cls of SKIP_CLASSES) {
-          if (parent.classList?.contains(cls)) return NodeFilter.FILTER_REJECT;
-        }
-        // Skip empty/whitespace-only nodes
-        if (!node.textContent?.trim()) return NodeFilter.FILTER_REJECT;
-        // Skip hidden elements
-        const style = window.getComputedStyle(parent);
-        if (style.display === "none" || style.visibility === "hidden") {
-          return NodeFilter.FILTER_REJECT;
-        }
-        return NodeFilter.FILTER_ACCEPT;
-      },
-    }
-  );
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = node.parentElement;
+      if (!parent) return NodeFilter.FILTER_REJECT;
+      if (SKIP_TAGS.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
+      if (parent.closest("[contenteditable]")) return NodeFilter.FILTER_REJECT;
+      for (const cls of SKIP_CLASSES) {
+        if (parent.classList?.contains(cls)) return NodeFilter.FILTER_REJECT;
+      }
+      // Skip empty/whitespace-only nodes
+      if (!node.textContent?.trim()) return NodeFilter.FILTER_REJECT;
+      // Skip hidden elements
+      const style = window.getComputedStyle(parent);
+      if (style.display === "none" || style.visibility === "hidden") {
+        return NodeFilter.FILTER_REJECT;
+      }
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
 
   let node: Text | null;
   while ((node = walker.nextNode() as Text | null)) {
@@ -103,7 +124,7 @@ function createColoredSpan(token: ColorizedToken): HTMLSpanElement {
  */
 function replaceTextNode(
   textNode: Text,
-  sentences: ColorizedSentence[]
+  sentences: ColorizedSentence[],
 ): OriginalNode | null {
   const parent = textNode.parentNode;
   if (!parent) return null;
@@ -141,7 +162,7 @@ export async function colorizeDocument(
   scheme: string = "default",
   emphasis: string = "normal",
   showFunctionWords: boolean = true,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
 ): Promise<void> {
   if (isColorizing) return;
   isColorizing = true;
@@ -163,7 +184,12 @@ export async function colorizeDocument(
       const texts = batch.map((node) => node.textContent || "");
 
       try {
-        const response = await colorizeBatch(texts, scheme, emphasis, showFunctionWords);
+        const response = await colorizeBatch(
+          texts,
+          scheme,
+          emphasis,
+          showFunctionWords,
+        );
 
         for (let i = 0; i < batch.length; i++) {
           const sentences = response.results[i];
@@ -195,7 +221,7 @@ export function removeColorization(): void {
       if (record.replacement.parentNode) {
         record.replacement.parentNode.replaceChild(
           record.original,
-          record.replacement
+          record.replacement,
         );
       }
     } catch (e) {
@@ -220,7 +246,7 @@ let recolorizeTimer: ReturnType<typeof setTimeout> | null = null;
 export function recolorize(
   scheme: string,
   emphasis: string,
-  showFunctionWords: boolean
+  showFunctionWords: boolean,
 ): void {
   if (recolorizeTimer) clearTimeout(recolorizeTimer);
   recolorizeTimer = setTimeout(() => {

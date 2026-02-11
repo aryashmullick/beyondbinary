@@ -3,14 +3,8 @@
   "name": "WIT - Words In Technicolor",
   "version": "1.0.0",
   "description": "Dyslexia reading assistance: color-coded text, eye tracking, and gaze-contingent display to reduce visual crowding.",
-  "permissions": [
-    "activeTab",
-    "storage",
-    "scripting"
-  ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
+  "permissions": ["activeTab", "storage", "scripting"],
+  "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "src/background/index.js",
     "type": "module"

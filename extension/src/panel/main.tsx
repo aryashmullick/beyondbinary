@@ -6,5 +6,5 @@ import "@/styles/globals.css";
 ReactDOM.createRoot(document.getElementById("wit-panel-root")!).render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>
+  </React.StrictMode>,
 );

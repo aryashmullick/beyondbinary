@@ -7,7 +7,10 @@ interface MinimizedIconProps {
   isActive: boolean;
 }
 
-export const MinimizedIcon: React.FC<MinimizedIconProps> = ({ onClick, isActive }) => {
+export const MinimizedIcon: React.FC<MinimizedIconProps> = ({
+  onClick,
+  isActive,
+}) => {
   return (
     <motion.button
       onClick={onClick}

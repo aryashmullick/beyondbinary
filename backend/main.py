@@ -6,11 +6,14 @@ Provides NLP-based text analysis, color coding, and gaze processing.
 import os
 import time
 import asyncio
+from pathlib import Path
 from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 import orjson
 
@@ -92,8 +95,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Static files (WebGazer + tracker page)
+STATIC_DIR = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
 # Store active gaze processors per WebSocket connection
 gaze_processors: dict[str, tuple[GazeProcessor, str]] = {}
+
+
+# ─── Eye Tracker Page ──────────────────────────────────────────────────────────
+
+@app.get("/eye-tracker", response_class=HTMLResponse)
+async def eye_tracker_page():
+    """
+    Serve the WebGazer eye-tracker page.
+    Runs on localhost (secure context → getUserMedia works)
+    with no extension CSP (eval() from TF.js / numeric.js is allowed).
+    """
+    html_path = STATIC_DIR / "eye-tracker.html"
+    return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
 
 
 # ─── Health & Info ──────────────────────────────────────────────────────────────

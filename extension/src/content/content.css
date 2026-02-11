@@ -17,7 +17,9 @@
 
 /* Colored text styles */
 .wit-colored {
-  transition: color 0.2s ease, opacity 0.2s ease;
+  transition:
+    color 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .wit-colored:hover {
@@ -34,25 +36,13 @@
   pointer-events: none !important;
 }
 
-/* Focus ring */
-#wit-focus-ring {
+/* Focus dot */
+#wit-focus-dot {
   pointer-events: none !important;
 }
 
-/* Calibration overlay */
-#wit-calibration-overlay {
-  cursor: pointer;
-}
-
-#wit-calibration-overlay div {
-  cursor: pointer;
-}
-
-/* Hide WebGazer video elements */
-#webgazerVideoFeed,
-#webgazerVideoContainer,
-#webgazerFaceOverlay,
-#webgazerFaceFeedbackBox,
-#webgazerGazeDot {
-  display: none !important;
+/* Word spans injected by gaze display – visual-only transitions, no layout shift */
+span.wit-word {
+  display: inline;
+  transition: background 0.1s ease;
 }

@@ -1,35 +1,38 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ColorCodingSettings } from "@/components/ColorCodingSettings";
-import { DirectorMode } from "@/components/DirectorMode";
 import { StatusBar } from "@/components/StatusBar";
 import { MinimizedIcon } from "@/components/MinimizedIcon";
-import {
-  checkHealth,
-  getLegend,
-  type LegendItem,
-} from "@/lib/api";
-import {
-  X,
-  Minus,
-  Palette,
-  Eye,
-  Settings,
-  Sparkles,
-  Heart,
-} from "lucide-react";
+import { checkHealth, getLegend, type LegendItem } from "@/lib/api";
+import { Minus } from "lucide-react";
 
 // ─── Message Types ─────────────────────────────────────────────────────────────
 
 type MessageToContent =
-  | { type: "TOGGLE_COLOR_CODING"; enabled: boolean; scheme: string; emphasis: string; showFunctionWords: boolean }
-  | { type: "UPDATE_COLOR_SETTINGS"; scheme: string; emphasis: string; showFunctionWords: boolean }
-  | { type: "TOGGLE_DIRECTOR_MODE"; enabled: boolean; crowdingIntensity: string; gazeSmoothing: number }
-  | { type: "UPDATE_DIRECTOR_SETTINGS"; crowdingIntensity: string; gazeSmoothing: number }
-  | { type: "START_CALIBRATION" }
+  | {
+      type: "TOGGLE_COLOR_CODING";
+      enabled: boolean;
+      scheme: string;
+      emphasis: string;
+      showFunctionWords: boolean;
+    }
+  | {
+      type: "UPDATE_COLOR_SETTINGS";
+      scheme: string;
+      emphasis: string;
+      showFunctionWords: boolean;
+    }
+  | {
+      type: "TOGGLE_DIRECTOR_MODE";
+      enabled: boolean;
+      crowdingIntensity: string;
+    }
+  | {
+      type: "UPDATE_DIRECTOR_SETTINGS";
+      crowdingIntensity: string;
+    }
   | { type: "GET_STATUS" };
 
 function sendToContent(msg: MessageToContent) {
@@ -55,11 +58,8 @@ export const App: React.FC = () => {
 
   // Director mode state
   const [directorModeEnabled, setDirectorModeEnabled] = useState(false);
-  const [isCalibrating, setIsCalibrating] = useState(false);
   const [isTracking, setIsTracking] = useState(false);
   const [crowdingIntensity, setCrowdingIntensity] = useState("medium");
-  const [gazeSmoothing, setGazeSmoothing] = useState(5);
-  const [webcamStatus, setWebcamStatus] = useState<"unavailable" | "permission_denied" | "ready" | "active">("ready");
 
   // ─── Effects ───────────────────────────────────────────────────────────────
 
@@ -97,14 +97,8 @@ export const App: React.FC = () => {
         case "PROCESSING_DONE":
           setIsProcessing(false);
           break;
-        case "WEBCAM_STATUS":
-          setWebcamStatus(event.data.status);
-          break;
         case "TRACKING_STATUS":
           setIsTracking(event.data.active);
-          break;
-        case "CALIBRATION_DONE":
-          setIsCalibrating(false);
           break;
       }
     };
@@ -115,89 +109,89 @@ export const App: React.FC = () => {
 
   // ─── Handlers ──────────────────────────────────────────────────────────────
 
-  const handleColorToggle = useCallback((enabled: boolean) => {
-    setColorCodingEnabled(enabled);
-    sendToContent({
-      type: "TOGGLE_COLOR_CODING",
-      enabled,
-      scheme: colorScheme,
-      emphasis,
-      showFunctionWords,
-    });
-  }, [colorScheme, emphasis, showFunctionWords]);
-
-  const handleSchemeChange = useCallback((scheme: string) => {
-    setColorScheme(scheme);
-    if (colorCodingEnabled) {
+  const handleColorToggle = useCallback(
+    (enabled: boolean) => {
+      setColorCodingEnabled(enabled);
       sendToContent({
-        type: "UPDATE_COLOR_SETTINGS",
-        scheme,
+        type: "TOGGLE_COLOR_CODING",
+        enabled,
+        scheme: colorScheme,
         emphasis,
         showFunctionWords,
       });
-    }
-  }, [colorCodingEnabled, emphasis, showFunctionWords]);
+    },
+    [colorScheme, emphasis, showFunctionWords],
+  );
 
-  const handleEmphasisChange = useCallback((emp: string) => {
-    setEmphasis(emp);
-    if (colorCodingEnabled) {
+  const handleSchemeChange = useCallback(
+    (scheme: string) => {
+      setColorScheme(scheme);
+      if (colorCodingEnabled) {
+        sendToContent({
+          type: "UPDATE_COLOR_SETTINGS",
+          scheme,
+          emphasis,
+          showFunctionWords,
+        });
+      }
+    },
+    [colorCodingEnabled, emphasis, showFunctionWords],
+  );
+
+  const handleEmphasisChange = useCallback(
+    (emp: string) => {
+      setEmphasis(emp);
+      if (colorCodingEnabled) {
+        sendToContent({
+          type: "UPDATE_COLOR_SETTINGS",
+          scheme: colorScheme,
+          emphasis: emp,
+          showFunctionWords,
+        });
+      }
+    },
+    [colorCodingEnabled, colorScheme, showFunctionWords],
+  );
+
+  const handleShowFunctionWordsChange = useCallback(
+    (show: boolean) => {
+      setShowFunctionWords(show);
+      if (colorCodingEnabled) {
+        sendToContent({
+          type: "UPDATE_COLOR_SETTINGS",
+          scheme: colorScheme,
+          emphasis,
+          showFunctionWords: show,
+        });
+      }
+    },
+    [colorCodingEnabled, colorScheme, emphasis],
+  );
+
+  const handleDirectorToggle = useCallback(
+    (enabled: boolean) => {
+      setDirectorModeEnabled(enabled);
       sendToContent({
-        type: "UPDATE_COLOR_SETTINGS",
-        scheme: colorScheme,
-        emphasis: emp,
-        showFunctionWords,
-      });
-    }
-  }, [colorCodingEnabled, colorScheme, showFunctionWords]);
-
-  const handleShowFunctionWordsChange = useCallback((show: boolean) => {
-    setShowFunctionWords(show);
-    if (colorCodingEnabled) {
-      sendToContent({
-        type: "UPDATE_COLOR_SETTINGS",
-        scheme: colorScheme,
-        emphasis,
-        showFunctionWords: show,
-      });
-    }
-  }, [colorCodingEnabled, colorScheme, emphasis]);
-
-  const handleDirectorToggle = useCallback((enabled: boolean) => {
-    setDirectorModeEnabled(enabled);
-    sendToContent({
-      type: "TOGGLE_DIRECTOR_MODE",
-      enabled,
-      crowdingIntensity,
-      gazeSmoothing,
-    });
-  }, [crowdingIntensity, gazeSmoothing]);
-
-  const handleCrowdingChange = useCallback((intensity: string) => {
-    setCrowdingIntensity(intensity);
-    if (directorModeEnabled) {
-      sendToContent({
-        type: "UPDATE_DIRECTOR_SETTINGS",
-        crowdingIntensity: intensity,
-        gazeSmoothing,
-      });
-    }
-  }, [directorModeEnabled, gazeSmoothing]);
-
-  const handleSmoothingChange = useCallback((value: number) => {
-    setGazeSmoothing(value);
-    if (directorModeEnabled) {
-      sendToContent({
-        type: "UPDATE_DIRECTOR_SETTINGS",
+        type: "TOGGLE_DIRECTOR_MODE",
+        enabled,
         crowdingIntensity,
-        gazeSmoothing: value,
       });
-    }
-  }, [directorModeEnabled, crowdingIntensity]);
+    },
+    [crowdingIntensity],
+  );
 
-  const handleStartCalibration = useCallback(() => {
-    setIsCalibrating(true);
-    sendToContent({ type: "START_CALIBRATION" });
-  }, []);
+  const handleCrowdingChange = useCallback(
+    (intensity: string) => {
+      setCrowdingIntensity(intensity);
+      if (directorModeEnabled) {
+        sendToContent({
+          type: "UPDATE_DIRECTOR_SETTINGS",
+          crowdingIntensity: intensity,
+        });
+      }
+    },
+    [directorModeEnabled],
+  );
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
@@ -220,7 +214,9 @@ export const App: React.FC = () => {
             <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-wit-primary/5 to-wit-secondary/5 border-b border-wit-border">
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-wit-primary to-wit-secondary">
-                  <span className="text-white font-display font-bold text-sm">W</span>
+                  <span className="text-white font-display font-bold text-sm">
+                    W
+                  </span>
                 </div>
                 <div>
                   <h1 className="font-display font-bold text-wit-text text-[1.05rem] tracking-tight">
@@ -246,48 +242,23 @@ export const App: React.FC = () => {
 
             {/* ─── Content ────────────────────────────────────────────── */}
             <div className="flex-1 overflow-y-auto wit-scrollbar px-4 py-4">
-              <Tabs defaultValue="colors" className="w-full">
-                <TabsList className="mb-4">
-                  <TabsTrigger value="colors" className="gap-1.5">
-                    <Palette className="w-3.5 h-3.5" />
-                    Colors
-                  </TabsTrigger>
-                  <TabsTrigger value="director" className="gap-1.5">
-                    <Eye className="w-3.5 h-3.5" />
-                    Director
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="colors">
-                  <ColorCodingSettings
-                    enabled={colorCodingEnabled}
-                    onToggle={handleColorToggle}
-                    scheme={colorScheme}
-                    onSchemeChange={handleSchemeChange}
-                    emphasis={emphasis}
-                    onEmphasisChange={handleEmphasisChange}
-                    showFunctionWords={showFunctionWords}
-                    onShowFunctionWordsChange={handleShowFunctionWordsChange}
-                    legend={legend}
-                    isProcessing={isProcessing}
-                  />
-                </TabsContent>
-
-                <TabsContent value="director">
-                  <DirectorMode
-                    enabled={directorModeEnabled}
-                    onToggle={handleDirectorToggle}
-                    isCalibrating={isCalibrating}
-                    isTracking={isTracking}
-                    onStartCalibration={handleStartCalibration}
-                    crowdingIntensity={crowdingIntensity}
-                    onCrowdingIntensityChange={handleCrowdingChange}
-                    gazeSmoothing={gazeSmoothing}
-                    onGazeSmoothingChange={handleSmoothingChange}
-                    webcamStatus={webcamStatus}
-                  />
-                </TabsContent>
-              </Tabs>
+              <ColorCodingSettings
+                enabled={colorCodingEnabled}
+                onToggle={handleColorToggle}
+                scheme={colorScheme}
+                onSchemeChange={handleSchemeChange}
+                emphasis={emphasis}
+                onEmphasisChange={handleEmphasisChange}
+                showFunctionWords={showFunctionWords}
+                onShowFunctionWordsChange={handleShowFunctionWordsChange}
+                legend={legend}
+                isProcessing={isProcessing}
+                directorEnabled={directorModeEnabled}
+                onDirectorToggle={handleDirectorToggle}
+                isTracking={isTracking}
+                crowdingIntensity={crowdingIntensity}
+                onCrowdingIntensityChange={handleCrowdingChange}
+              />
             </div>
 
             {/* ─── Footer ─────────────────────────────────────────────── */}

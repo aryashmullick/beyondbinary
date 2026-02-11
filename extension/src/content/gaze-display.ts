@@ -1,328 +1,488 @@
 /**
- * Gaze-Contingent Display - Modifies the page display based on gaze data.
- * Reduces visual crowding around the fixation point to help dyslexic readers.
+ * Gaze-Contingent Display – highlights individual WORDS near the cursor.
+ *
+ * Works with BOTH the colorizer's `.wit-colored` spans and its own
+ * `.wit-word` spans (when color coding is off).  When a word already
+ * has an NLP-assigned color, the highlight is picked to contrast with
+ * that color.  When color coding is off, a warm-yellow highlight is used.
+ *
+ * Visual effects:
+ *  - Words within the focus zone get a background highlight
+ *  - The single closest word gets a stronger highlight + subtle underline
+ *  - Words in the transition zone get a lighter highlight
+ *  - Surrounding text dims slightly so focus words pop
+ *  - A thin focus dot follows the cursor
+ *  - The real mouse cursor is hidden while Director Mode is active
+ *  - No font-size changes (avoids layout thrashing)
  */
 
-import type { GazeUpdate, CrowdingReduction, GazeRegion } from "@/lib/api";
+// ─── Configuration ─────────────────────────────────────────────────────────
 
-let overlayElement: HTMLElement | null = null;
-let focusRingElement: HTMLElement | null = null;
-let lastUpdate: GazeUpdate | null = null;
-let animationFrame: number | null = null;
+const FOCUS_RADIUS = 90; // px – inner highlight zone
+const TRANSITION_RADIUS = 180; // px – gradual fade zone
+const DIM_OPACITY = 0.45; // opacity for text outside transition
+const RING_SIZE = 8; // px – small dot
+
+// Fallback colours (no NLP color on word)
+const HIGHLIGHT_BG = "rgba(255, 249, 196, 0.45)"; // warm yellow
+const HIGHLIGHT_BG_STRONG = "rgba(255, 240, 140, 0.65)";
+const UNDERLINE_COLOR = "rgba(74, 111, 165, 0.5)";
+
+// Intensity multiplier (set via config)
+let intensityMult = 1.0;
+
+// ─── State ─────────────────────────────────────────────────────────────────
+
+let focusDot: HTMLElement | null = null;
+let cursorStyleEl: HTMLStyleElement | null = null;
 let isActive = false;
+let animFrame: number | null = null;
 
-// Keep track of modified elements to restore them
-let modifiedElements: Map<HTMLElement, { 
-  originalLetterSpacing: string;
-  originalWordSpacing: string;
-  originalLineHeight: string;
-  originalFontSize: string;
-  originalOpacity: string;
-}> = new Map();
+// Cached word rects – rebuilt on scroll / resize, reused between frames
+let wordCache: { el: HTMLElement; cx: number; cy: number }[] = [];
+let cacheValid = false;
+let scrollHandler: (() => void) | null = null;
+let resizeObserver: ResizeObserver | null = null;
+
+// Track highlighted words so we can clear them
+let highlightedWords = new Set<HTMLElement>();
+let primaryWord: HTMLElement | null = null;
+
+// ─── Colour helpers ────────────────────────────────────────────────────────
 
 /**
- * Initialize the gaze-contingent display system.
+ * Parse any CSS colour (rgb, rgba, hex, named) into [r, g, b].
+ * Returns null if it can't parse.
  */
-export function initGazeDisplay(): void {
-  // Create the radial focus overlay
-  overlayElement = document.createElement("div");
-  overlayElement.id = "wit-gaze-overlay";
-  overlayElement.className = "wit-gaze-overlay";
-  overlayElement.style.cssText = `
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    pointer-events: none;
-    z-index: 999990;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  `;
+function parseColor(css: string): [number, number, number] | null {
+  // Use a temporary element to resolve any CSS color string
+  const el = document.createElement("div");
+  el.style.color = css;
+  document.body.appendChild(el);
+  const computed = getComputedStyle(el).color;
+  el.remove();
+  const m = computed.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!m) return null;
+  return [parseInt(m[1]), parseInt(m[2]), parseInt(m[3])];
+}
 
-  // Focus ring indicator
-  focusRingElement = document.createElement("div");
-  focusRingElement.id = "wit-focus-ring";
-  focusRingElement.style.cssText = `
-    position: fixed;
-    width: 60px; height: 60px;
-    border-radius: 50%;
-    border: 2px solid rgba(74, 111, 165, 0.3);
-    pointer-events: none;
-    z-index: 999991;
-    transform: translate(-50%, -50%);
-    transition: all 0.15s ease-out;
-    opacity: 0;
-    box-shadow: 0 0 30px rgba(74, 111, 165, 0.1);
-  `;
-
-  document.body.appendChild(overlayElement);
-  document.body.appendChild(focusRingElement);
+/** Relative luminance (WCAG). */
+function luminance(r: number, g: number, b: number): number {
+  const [rs, gs, bs] = [r, g, b].map((c) => {
+    c /= 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
 }
 
 /**
- * Start the gaze-contingent display.
+ * For a given NLP text colour, return a contrasting highlight background
+ * and underline colour that is readable.
  */
-export function startGazeDisplay(): void {
-  isActive = true;
-  if (overlayElement) overlayElement.style.opacity = "1";
-  if (focusRingElement) focusRingElement.style.opacity = "1";
-}
+function contrastingHighlight(
+  textColor: string | null,
+  strong: boolean,
+): { bg: string; underline: string } {
+  if (!textColor) {
+    return {
+      bg: strong ? HIGHLIGHT_BG_STRONG : HIGHLIGHT_BG,
+      underline: UNDERLINE_COLOR,
+    };
+  }
 
-/**
- * Stop the gaze-contingent display.
- */
-export function stopGazeDisplay(): void {
-  isActive = false;
-  if (overlayElement) overlayElement.style.opacity = "0";
-  if (focusRingElement) focusRingElement.style.opacity = "0";
-  restoreAllElements();
-  if (animationFrame) {
-    cancelAnimationFrame(animationFrame);
-    animationFrame = null;
+  const rgb = parseColor(textColor);
+  if (!rgb) {
+    return {
+      bg: strong ? HIGHLIGHT_BG_STRONG : HIGHLIGHT_BG,
+      underline: UNDERLINE_COLOR,
+    };
+  }
+
+  const lum = luminance(...rgb);
+  const alpha = strong ? 0.28 : 0.18;
+
+  if (lum > 0.4) {
+    // Light text colour → use dark-ish highlight
+    return {
+      bg: `rgba(30, 40, 70, ${alpha})`,
+      underline: `rgba(30, 40, 70, 0.45)`,
+    };
+  } else if (lum > 0.15) {
+    // Medium text colour → use a warm light highlight
+    return {
+      bg: `rgba(255, 249, 196, ${alpha + 0.1})`,
+      underline: `rgba(120, 100, 30, 0.4)`,
+    };
+  } else {
+    // Dark text colour → use a light bright highlight
+    return {
+      bg: `rgba(255, 240, 140, ${alpha + 0.15})`,
+      underline: `rgba(74, 111, 165, 0.5)`,
+    };
   }
 }
 
-/**
- * Update the display based on new gaze data.
- */
-export function updateGazeDisplay(update: GazeUpdate): void {
-  if (!isActive) return;
-  lastUpdate = update;
-
-  if (animationFrame) cancelAnimationFrame(animationFrame);
-  animationFrame = requestAnimationFrame(() => applyGazeUpdate(update));
-}
+// ─── Word discovery ────────────────────────────────────────────────────────
 
 /**
- * Apply the gaze update to the page.
+ * Rebuild the wordCache.
+ *
+ * Strategy:
+ *  1. If the colorizer has run, words are wrapped in `span.wit-colored`.
+ *     Use those directly — no need to re-wrap.
+ *  2. Otherwise fall back to discovering / wrapping with `span.wit-word`.
+ *
+ * All rects are viewport-relative (getBoundingClientRect), which matches
+ * the cursor's clientX/clientY.  Cache is invalidated on scroll & resize
+ * so the positions stay correct.
  */
-function applyGazeUpdate(update: GazeUpdate): void {
-  if (!update.fixation || !update.region || !update.crowding) {
-    // No fixation - fade out effects
-    if (focusRingElement) {
-      focusRingElement.style.opacity = "0.3";
+function rebuildWordCache(): void {
+  wordCache = [];
+
+  // ── Try .wit-colored first (color coding is on) ──────────────────────
+  const colored = document.querySelectorAll<HTMLElement>("span.wit-colored");
+  if (colored.length > 0) {
+    for (const span of colored) {
+      const r = span.getBoundingClientRect();
+      if (
+        r.width > 0 &&
+        r.height > 0 &&
+        r.bottom >= -200 &&
+        r.top <= window.innerHeight + 200
+      ) {
+        wordCache.push({
+          el: span,
+          cx: r.left + r.width / 2,
+          cy: r.top + r.height / 2,
+        });
+      }
     }
+    cacheValid = true;
     return;
   }
 
-  const { region, crowding } = update;
-
-  // ─── Update Focus Ring ───────────────────────────────────────────────
-  if (focusRingElement) {
-    focusRingElement.style.left = `${region.centerX}px`;
-    focusRingElement.style.top = `${region.centerY}px`;
-    focusRingElement.style.width = `${region.focusRadius * 2}px`;
-    focusRingElement.style.height = `${region.focusRadius * 2}px`;
-    focusRingElement.style.opacity = "1";
-  }
-
-  // ─── Update Radial Overlay (vignette effect) ─────────────────────────
-  if (overlayElement) {
-    const gradient = `radial-gradient(
-      ellipse ${region.transitionRadius}px ${region.transitionRadius}px at ${region.centerX}px ${region.centerY}px,
-      transparent 0%,
-      transparent ${(region.focusRadius / region.transitionRadius * 100)}%,
-      rgba(255, 249, 196, ${crowding.highlightOpacity * 0.3}) ${((region.focusRadius + 20) / region.transitionRadius * 100)}%,
-      rgba(0, 0, 0, ${(1 - crowding.peripheryOpacity) * 0.15}) 100%
-    )`;
-    overlayElement.style.background = gradient;
-  }
-
-  // ─── Apply Crowding Reduction to Text Elements ───────────────────────
-  applyCrowdingReduction(region, crowding);
-}
-
-/**
- * Apply visual crowding reduction to text elements near the gaze point.
- */
-function applyCrowdingReduction(region: GazeRegion, crowding: CrowdingReduction): void {
-  // First, restore previously modified elements that are now outside the region
-  restoreDistantElements(region);
-
-  // Find text elements near the gaze point
-  const elements = getTextElementsInRegion(
-    region.centerX,
-    region.centerY,
-    region.blurRadius
-  );
-
-  for (const el of elements) {
-    const rect = el.getBoundingClientRect();
-    const elCenterX = rect.left + rect.width / 2;
-    const elCenterY = rect.top + rect.height / 2;
-
-    const distance = Math.sqrt(
-      (elCenterX - region.centerX) ** 2 +
-      (elCenterY - region.centerY) ** 2
-    );
-
-    // Save original styles if not already saved
-    if (!modifiedElements.has(el)) {
-      modifiedElements.set(el, {
-        originalLetterSpacing: el.style.letterSpacing,
-        originalWordSpacing: el.style.wordSpacing,
-        originalLineHeight: el.style.lineHeight,
-        originalFontSize: el.style.fontSize,
-        originalOpacity: el.style.opacity,
-      });
-    }
-
-    if (distance <= region.focusRadius) {
-      // ── Inner focus zone: enhance readability ──
-      const computedStyle = window.getComputedStyle(el);
-      const currentFontSize = parseFloat(computedStyle.fontSize) || 16;
-
-      el.style.letterSpacing = `${crowding.letterSpacingBoost}em`;
-      el.style.wordSpacing = `${crowding.wordSpacingBoost}em`;
-      el.style.fontSize = `${currentFontSize * crowding.focusFontScale}px`;
-      el.style.opacity = "1";
-
-    } else if (distance <= region.transitionRadius) {
-      // ── Transition zone: partial effect ──
-      const t = (distance - region.focusRadius) / (region.transitionRadius - region.focusRadius);
-      const easedT = 1 - (1 - t) * (1 - t); // ease-out
-
-      el.style.letterSpacing = `${crowding.letterSpacingBoost * (1 - easedT)}em`;
-      el.style.wordSpacing = `${crowding.wordSpacingBoost * (1 - easedT)}em`;
-      el.style.opacity = String(1 - (1 - crowding.peripheryOpacity) * easedT);
-
-    } else {
-      // ── Outer zone: reduce prominence ──
-      el.style.opacity = String(crowding.peripheryOpacity);
-      el.style.letterSpacing = "";
-      el.style.wordSpacing = "";
-    }
-  }
-}
-
-/**
- * Get text-containing elements near a screen coordinate.
- */
-function getTextElementsInRegion(
-  x: number,
-  y: number,
-  radius: number
-): HTMLElement[] {
-  const elements: HTMLElement[] = [];
-  const checked = new Set<HTMLElement>();
-
-  // Use elementsFromPoint at several positions in the region
-  const samplePoints = [
-    { x, y },
-    { x: x - radius * 0.5, y },
-    { x: x + radius * 0.5, y },
-    { x, y: y - radius * 0.5 },
-    { x, y: y + radius * 0.5 },
-    { x: x - radius * 0.3, y: y - radius * 0.3 },
-    { x: x + radius * 0.3, y: y - radius * 0.3 },
-    { x: x - radius * 0.3, y: y + radius * 0.3 },
-    { x: x + radius * 0.3, y: y + radius * 0.3 },
-  ];
-
-  for (const point of samplePoints) {
-    const els = document.elementsFromPoint(point.x, point.y);
-    for (const el of els) {
-      if (!(el instanceof HTMLElement)) continue;
-      if (checked.has(el)) continue;
-      checked.add(el);
-
-      // Check if this element contains text
-      if (isTextElement(el)) {
-        elements.push(el);
+  // ── Fall back to .wit-word (no colour coding) ────────────────────────
+  const existing = document.querySelectorAll<HTMLElement>("span.wit-word");
+  if (existing.length > 0) {
+    for (const span of existing) {
+      const r = span.getBoundingClientRect();
+      if (
+        r.width > 0 &&
+        r.height > 0 &&
+        r.bottom >= -200 &&
+        r.top <= window.innerHeight + 200
+      ) {
+        wordCache.push({
+          el: span,
+          cx: r.left + r.width / 2,
+          cy: r.top + r.height / 2,
+        });
       }
     }
+    if (wordCache.length > 0) {
+      cacheValid = true;
+      return;
+    }
   }
 
-  // Also check nearby elements via parent traversal
-  const centerEl = document.elementFromPoint(x, y);
-  if (centerEl instanceof HTMLElement) {
-    let parent: HTMLElement | null = centerEl;
-    for (let i = 0; i < 5 && parent; i++) {
-      const children = parent.children;
-      for (let j = 0; j < children.length; j++) {
-        const child = children[j];
-        if (!(child instanceof HTMLElement) || checked.has(child)) continue;
-        checked.add(child);
+  // ── First time with no colour coding — wrap text nodes ───────────────
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = node.parentElement;
+      if (!parent) return NodeFilter.FILTER_REJECT;
+      if (
+        parent.closest(
+          "#wit-panel-container, #wit-panel-iframe, #wit-tracker-iframe, " +
+            "#wit-gaze-overlay, #wit-focus-dot, script, style, noscript, svg, canvas",
+        )
+      )
+        return NodeFilter.FILTER_REJECT;
+      if (parent.classList.contains("wit-word")) return NodeFilter.FILTER_REJECT;
+      const text = node.textContent;
+      if (!text || !text.trim()) return NodeFilter.FILTER_REJECT;
+      const rect = parent.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return NodeFilter.FILTER_REJECT;
+      if (rect.bottom < -200 || rect.top > window.innerHeight + 200)
+        return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
 
-        const rect = child.getBoundingClientRect();
-        const dist = Math.sqrt(
-          (rect.left + rect.width / 2 - x) ** 2 +
-          (rect.top + rect.height / 2 - y) ** 2
-        );
+  const textNodes: Text[] = [];
+  let node: Node | null;
+  while ((node = walker.nextNode())) textNodes.push(node as Text);
 
-        if (dist <= radius && isTextElement(child)) {
-          elements.push(child);
+  for (const tn of textNodes) {
+    const text = tn.textContent || "";
+    const parts = text.match(/\S+|\s+/g);
+    if (!parts || parts.length <= 1) {
+      if (text.trim()) {
+        const span = document.createElement("span");
+        span.className = "wit-word";
+        span.textContent = text;
+        tn.parentNode?.replaceChild(span, tn);
+        const r = span.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) {
+          wordCache.push({ el: span, cx: r.left + r.width / 2, cy: r.top + r.height / 2 });
         }
       }
-      parent = parent.parentElement;
+      continue;
+    }
+    const frag = document.createDocumentFragment();
+    for (const part of parts) {
+      if (/^\s+$/.test(part)) {
+        frag.appendChild(document.createTextNode(part));
+      } else {
+        const span = document.createElement("span");
+        span.className = "wit-word";
+        span.textContent = part;
+        frag.appendChild(span);
+      }
+    }
+    tn.parentNode?.replaceChild(frag, tn);
+  }
+
+  const allWords = document.querySelectorAll<HTMLElement>("span.wit-word");
+  for (const span of allWords) {
+    const r = span.getBoundingClientRect();
+    if (
+      r.width > 0 &&
+      r.height > 0 &&
+      r.bottom >= -200 &&
+      r.top <= window.innerHeight + 200
+    ) {
+      wordCache.push({ el: span, cx: r.left + r.width / 2, cy: r.top + r.height / 2 });
     }
   }
-
-  return elements;
+  cacheValid = true;
 }
 
-/**
- * Check if an element primarily contains text.
- */
-function isTextElement(el: HTMLElement): boolean {
-  const tag = el.tagName;
-  if (["P", "SPAN", "A", "LI", "TD", "TH", "H1", "H2", "H3", "H4", "H5", "H6",
-       "LABEL", "STRONG", "EM", "B", "I", "U", "SMALL", "BLOCKQUOTE", "CITE",
-       "DD", "DT", "FIGCAPTION", "MARK", "S", "SUB", "SUP", "TIME"].includes(tag)) {
-    return true;
-  }
-  // Check if element has direct text content
-  for (const node of el.childNodes) {
-    if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim()) {
-      return true;
+function invalidateCache(): void {
+  cacheValid = false;
+}
+
+// ─── Public API ────────────────────────────────────────────────────────────
+
+export function initGazeDisplay(): void {
+  // Focus dot
+  focusDot = document.createElement("div");
+  focusDot.id = "wit-focus-dot";
+  focusDot.style.cssText = `
+    position: fixed;
+    width: ${RING_SIZE}px; height: ${RING_SIZE}px;
+    border-radius: 50%;
+    background: rgba(74, 111, 165, 0.5);
+    pointer-events: none;
+    z-index: 999991;
+    transform: translate(-50%, -50%);
+    transition: left 0.06s linear, top 0.06s linear;
+    opacity: 0;
+    box-shadow: 0 0 6px rgba(74, 111, 165, 0.3);
+  `;
+  document.body.appendChild(focusDot);
+
+  // Hide the real cursor while Director Mode is active
+  cursorStyleEl = document.createElement("style");
+  cursorStyleEl.id = "wit-cursor-hide";
+  cursorStyleEl.textContent = `
+    html, html *, body, body * {
+      cursor: none !important;
     }
+  `;
+
+  // Invalidate cache on scroll / resize
+  scrollHandler = () => invalidateCache();
+  window.addEventListener("scroll", scrollHandler, { passive: true, capture: true });
+  window.addEventListener("resize", scrollHandler, { passive: true });
+
+  // Also watch for DOM mutations (e.g. lazy-loaded content)
+  resizeObserver = new ResizeObserver(() => invalidateCache());
+  resizeObserver.observe(document.body);
+}
+
+export function startGazeDisplay(): void {
+  isActive = true;
+  if (focusDot) focusDot.style.opacity = "1";
+  if (cursorStyleEl) document.head.appendChild(cursorStyleEl);
+  cacheValid = false;
+}
+
+export function stopGazeDisplay(): void {
+  isActive = false;
+  if (focusDot) focusDot.style.opacity = "0";
+  cursorStyleEl?.remove();
+  clearHighlights();
+  clearDimming();
+  if (animFrame) {
+    cancelAnimationFrame(animFrame);
+    animFrame = null;
   }
-  return false;
+}
+
+export function setIntensity(intensity: string): void {
+  const map: Record<string, number> = { low: 0.5, medium: 1.0, high: 1.5 };
+  intensityMult = map[intensity] ?? 1.0;
 }
 
 /**
- * Restore elements that are far from the current gaze region.
+ * Called every frame with the cursor position (clientX, clientY).
  */
-function restoreDistantElements(region: GazeRegion): void {
-  for (const [el, original] of modifiedElements) {
-    const rect = el.getBoundingClientRect();
-    const dist = Math.sqrt(
-      (rect.left + rect.width / 2 - region.centerX) ** 2 +
-      (rect.top + rect.height / 2 - region.centerY) ** 2
-    );
-
-    if (dist > region.blurRadius * 1.5) {
-      el.style.letterSpacing = original.originalLetterSpacing;
-      el.style.wordSpacing = original.originalWordSpacing;
-      el.style.lineHeight = original.originalLineHeight;
-      el.style.fontSize = original.originalFontSize;
-      el.style.opacity = original.originalOpacity;
-      modifiedElements.delete(el);
-    }
-  }
+export function updateGaze(x: number, y: number): void {
+  if (!isActive) return;
+  if (animFrame) cancelAnimationFrame(animFrame);
+  animFrame = requestAnimationFrame(() => applyFrame(x, y));
 }
 
-/**
- * Restore all modified elements to their original state.
- */
-function restoreAllElements(): void {
-  for (const [el, original] of modifiedElements) {
-    try {
-      el.style.letterSpacing = original.originalLetterSpacing;
-      el.style.wordSpacing = original.originalWordSpacing;
-      el.style.lineHeight = original.originalLineHeight;
-      el.style.fontSize = original.originalFontSize;
-      el.style.opacity = original.originalOpacity;
-    } catch {}
-  }
-  modifiedElements.clear();
-}
-
-/**
- * Clean up all gaze display elements.
- */
 export function destroyGazeDisplay(): void {
   stopGazeDisplay();
-  overlayElement?.remove();
-  focusRingElement?.remove();
-  overlayElement = null;
-  focusRingElement = null;
+
+  if (scrollHandler) {
+    window.removeEventListener("scroll", scrollHandler, { capture: true } as any);
+    window.removeEventListener("resize", scrollHandler);
+    scrollHandler = null;
+  }
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+
+  // Remove wit-word spans (only the ones we created, NOT wit-colored)
+  const words = document.querySelectorAll<HTMLElement>("span.wit-word");
+  for (const span of words) {
+    const text = document.createTextNode(span.textContent || "");
+    span.parentNode?.replaceChild(text, span);
+  }
+  document.body.normalize();
+
+  focusDot?.remove();
+  focusDot = null;
+  cursorStyleEl?.remove();
+  cursorStyleEl = null;
+  wordCache = [];
+  cacheValid = false;
+}
+
+// ─── Frame rendering ───────────────────────────────────────────────────────
+
+function applyFrame(gazeX: number, gazeY: number): void {
+  // 1. Move focus dot
+  if (focusDot) {
+    focusDot.style.left = `${gazeX}px`;
+    focusDot.style.top = `${gazeY}px`;
+  }
+
+  // 2. Rebuild cache if stale
+  if (!cacheValid) rebuildWordCache();
+
+  // 3. Classify words by distance
+  const focusR = FOCUS_RADIUS * intensityMult;
+  const transR = TRANSITION_RADIUS * intensityMult;
+
+  let closestDist = Infinity;
+  let closestWord: HTMLElement | null = null;
+
+  const toHighlight: { el: HTMLElement; dist: number }[] = [];
+  const toTransition: { el: HTMLElement; dist: number }[] = [];
+
+  for (const w of wordCache) {
+    const dx = w.cx - gazeX;
+    const dy = w.cy - gazeY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist <= focusR) {
+      toHighlight.push({ el: w.el, dist });
+      if (dist < closestDist) {
+        closestDist = dist;
+        closestWord = w.el;
+      }
+    } else if (dist <= transR) {
+      toTransition.push({ el: w.el, dist });
+    }
+  }
+
+  // 4. Clear previous highlights
+  for (const el of highlightedWords) {
+    el.style.background = "";
+    el.style.boxShadow = "";
+  }
+  highlightedWords.clear();
+  primaryWord = null;
+
+  // 5. Highlight focus-zone words (contrast-aware)
+  for (const { el } of toHighlight) {
+    const textColor = el.style.color || null;
+    const { bg } = contrastingHighlight(textColor, false);
+    el.style.background = bg;
+    highlightedWords.add(el);
+  }
+
+  // 6. Strongest highlight + underline on closest word
+  if (closestWord) {
+    const textColor = closestWord.style.color || null;
+    const { bg, underline } = contrastingHighlight(textColor, true);
+    closestWord.style.background = bg;
+    closestWord.style.boxShadow = `inset 0 -2px 0 ${underline}`;
+    primaryWord = closestWord;
+  }
+
+  // 7. Transition zone — lighter highlight
+  for (const { el, dist } of toTransition) {
+    const t = (dist - focusR) / (transR - focusR);
+    const textColor = el.style.color || null;
+    const { bg } = contrastingHighlight(textColor, false);
+    // Parse the bg rgba to reduce its alpha further
+    const alphaMatch = bg.match(/[\d.]+\)$/);
+    const baseAlpha = alphaMatch ? parseFloat(alphaMatch[0]) : 0.2;
+    const fadedAlpha = baseAlpha * (1 - t);
+    const fadedBg = bg.replace(/[\d.]+\)$/, `${fadedAlpha.toFixed(3)})`);
+    el.style.background = fadedBg;
+    highlightedWords.add(el);
+  }
+
+  // 8. Dim the rest of the page
+  applyDimming(gazeX, gazeY, transR);
+}
+
+// ─── Page dimming ──────────────────────────────────────────────────────────
+
+let dimOverlay: HTMLElement | null = null;
+
+function applyDimming(cx: number, cy: number, radius: number): void {
+  if (!dimOverlay) {
+    dimOverlay = document.createElement("div");
+    dimOverlay.id = "wit-gaze-overlay";
+    dimOverlay.style.cssText = `
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: 999990;
+      transition: none;
+    `;
+    document.body.appendChild(dimOverlay);
+  }
+
+  const innerPct =
+    ((radius * 0.5) / Math.max(window.innerWidth, window.innerHeight)) * 100;
+  const outerPct =
+    (radius / Math.max(window.innerWidth, window.innerHeight)) * 100;
+  const dimAlpha = (1 - DIM_OPACITY) * 0.15 * intensityMult;
+
+  dimOverlay.style.background = `radial-gradient(
+    circle ${radius}px at ${cx}px ${cy}px,
+    transparent ${innerPct}%,
+    rgba(0, 0, 0, ${dimAlpha * 0.3}) ${outerPct}%,
+    rgba(0, 0, 0, ${dimAlpha}) 100%
+  )`;
+}
+
+function clearHighlights(): void {
+  for (const el of highlightedWords) {
+    el.style.background = "";
+    el.style.boxShadow = "";
+  }
+  highlightedWords.clear();
+  primaryWord = null;
+}
+
+function clearDimming(): void {
+  dimOverlay?.remove();
+  dimOverlay = null;
 }

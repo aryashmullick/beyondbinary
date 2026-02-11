@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { resolve } from "path";
-import { copyFileSync, mkdirSync, readdirSync, existsSync } from "fs";
+import { copyFileSync, mkdirSync, readdirSync } from "fs";
 
 // Plugin to copy public files and manifest to dist
 function copyExtensionFiles() {
@@ -12,7 +12,7 @@ function copyExtensionFiles() {
         mkdirSync(resolve(__dirname, "dist"), { recursive: true });
         copyFileSync(
           resolve(__dirname, "public/manifest.json"),
-          resolve(__dirname, "dist/manifest.json")
+          resolve(__dirname, "dist/manifest.json"),
         );
         mkdirSync(resolve(__dirname, "dist/icons"), { recursive: true });
         const iconsDir = resolve(__dirname, "public/icons");
@@ -20,7 +20,7 @@ function copyExtensionFiles() {
           if (file.endsWith(".png")) {
             copyFileSync(
               resolve(iconsDir, file),
-              resolve(__dirname, "dist/icons", file)
+              resolve(__dirname, "dist/icons", file),
             );
           }
         }
@@ -28,7 +28,7 @@ function copyExtensionFiles() {
         mkdirSync(resolve(__dirname, "dist/src/content"), { recursive: true });
         copyFileSync(
           resolve(__dirname, "src/content/content.css"),
-          resolve(__dirname, "dist/src/content/content.css")
+          resolve(__dirname, "dist/src/content/content.css"),
         );
         console.log("✅ Extension files copied to dist/");
       } catch (e) {
