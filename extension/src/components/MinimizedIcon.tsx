@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { APP_NAME, APP_COLOR } from "@/lib/config";
 
 interface MinimizedIconProps {
   onClick: () => void;
@@ -25,7 +26,7 @@ export const MinimizedIcon: React.FC<MinimizedIconProps> = ({
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: "spring", stiffness: 300, damping: 18 }}
-      title="Open WIT Panel"
+      title={`Open ${APP_NAME} Panel`}
     >
       {isActive && (
         <motion.div
@@ -37,13 +38,9 @@ export const MinimizedIcon: React.FC<MinimizedIconProps> = ({
       )}
       <span
         className="font-display font-extrabold text-sm"
-        style={{
-          background: "linear-gradient(135deg, #4A6FA5, #6B9E6B, #E8A838)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-        }}
+        style={{ color: APP_COLOR }}
       >
-        W
+        {APP_NAME.charAt(0)}
       </span>
     </motion.button>
   );

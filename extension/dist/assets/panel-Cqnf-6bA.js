@@ -20753,6 +20753,8 @@ const StatusBar = ({
     }
   );
 };
+const APP_NAME = "Hello";
+const APP_COLOR = "#4A6FA5";
 const MinimizedIcon = ({
   onClick,
   isActive
@@ -20771,7 +20773,7 @@ const MinimizedIcon = ({
       initial: { scale: 0, opacity: 0 },
       animate: { scale: 1, opacity: 1 },
       transition: { type: "spring", stiffness: 300, damping: 18 },
-      title: "Open WIT Panel",
+      title: `Open ${APP_NAME} Panel`,
       children: [
         isActive && /* @__PURE__ */ jsxRuntimeExports.jsx(
           motion.div,
@@ -20786,12 +20788,8 @@ const MinimizedIcon = ({
           "span",
           {
             className: "font-display font-extrabold text-sm",
-            style: {
-              background: "linear-gradient(135deg, #4A6FA5, #6B9E6B, #E8A838)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent"
-            },
-            children: "W"
+            style: { color: APP_COLOR },
+            children: APP_NAME.charAt(0)
           }
         )
       ]
@@ -20894,7 +20892,13 @@ const App = () => {
         });
       }
     },
-    [colorScheme, emphasis, showFunctionWords, directorModeEnabled, crowdingIntensity]
+    [
+      colorScheme,
+      emphasis,
+      showFunctionWords,
+      directorModeEnabled,
+      crowdingIntensity
+    ]
   );
   const handleSchemeChange = reactExports.useCallback(
     (scheme) => {
@@ -20994,12 +20998,8 @@ const App = () => {
                   "h1",
                   {
                     className: "font-display font-extrabold text-[15px] tracking-tight",
-                    style: {
-                      background: "linear-gradient(135deg, #4A6FA5, #6B9E6B, #E8A838)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent"
-                    },
-                    children: "WIT"
+                    style: { color: APP_COLOR },
+                    children: APP_NAME
                   }
                 ),
                 isProcessing && /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -21072,7 +21072,8 @@ const App = () => {
                 className: "font-display text-[12px] mt-1 leading-relaxed",
                 style: { color: "#A89E92" },
                 children: [
-                  "WIT can't work without the backend server.",
+                  APP_NAME,
+                  " can't work without the backend server.",
                   /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
                   "Please start it and try again."
                 ]

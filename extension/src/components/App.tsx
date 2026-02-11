@@ -5,6 +5,7 @@ import { ColorCodingSettings } from "@/components/ColorCodingSettings";
 import { StatusBar } from "@/components/StatusBar";
 import { MinimizedIcon } from "@/components/MinimizedIcon";
 import { checkHealth, getLegend, type LegendItem } from "@/lib/api";
+import { APP_NAME, APP_COLOR } from "@/lib/config";
 import { Minus, Sparkles } from "lucide-react";
 
 // ─── Message Types ─────────────────────────────────────────────────────────────
@@ -238,14 +239,9 @@ export const App: React.FC = () => {
               <div className="flex items-center gap-2">
                 <h1
                   className="font-display font-extrabold text-[15px] tracking-tight"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, #4A6FA5, #6B9E6B, #E8A838)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                  }}
+                  style={{ color: APP_COLOR }}
                 >
-                  WIT
+                  {APP_NAME}
                 </h1>
                 {isProcessing && (
                   <motion.div
@@ -307,7 +303,7 @@ export const App: React.FC = () => {
                       className="font-display text-[12px] mt-1 leading-relaxed"
                       style={{ color: "#A89E92" }}
                     >
-                      WIT can't work without the backend server.
+                      {APP_NAME} can't work without the backend server.
                       <br />
                       Please start it and try again.
                     </p>
