@@ -52,6 +52,12 @@
   ]);
   let coloredNodes = [];
   let isColorizing = false;
+  let mutationObserver = null;
+  let pendingMutationNodes = /* @__PURE__ */ new Set();
+  let mutationTimer = null;
+  let activeScheme = "default";
+  let activeEmphasis = "normal";
+  let activeShowFunctionWords = true;
   function getTextNodes(root) {
     const textNodes = [];
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
@@ -125,6 +131,9 @@
   async function colorizeDocument(scheme = "default", emphasis = "normal", showFunctionWords = true, onProgress) {
     if (isColorizing) return;
     isColorizing = true;
+    activeScheme = scheme;
+    activeEmphasis = emphasis;
+    activeShowFunctionWords = showFunctionWords;
     try {
       removeColorization();
       const textNodes = getTextNodes(document.body);
@@ -158,11 +167,13 @@
         processed += batch.length;
         onProgress == null ? void 0 : onProgress(processed / textNodes.length);
       }
+      startMutationObserver();
     } finally {
       isColorizing = false;
     }
   }
   function removeColorization() {
+    stopMutationObserver();
     for (const record of coloredNodes) {
       try {
         if (record.replacement.parentNode) {
@@ -188,6 +199,87 @@
     recolorizeTimer = setTimeout(() => {
       colorizeDocument(scheme, emphasis, showFunctionWords);
     }, 300);
+  }
+  async function colorizeNodes(nodes) {
+    var _a, _b, _c, _d, _e;
+    if (isColorizing) return;
+    isColorizing = true;
+    try {
+      const allTextNodes = [];
+      for (const node of nodes) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const parent = node.parentElement;
+          if (parent && !SKIP_TAGS.has(parent.tagName) && !parent.closest(".wit-colored-wrapper") && !((_a = parent.classList) == null ? void 0 : _a.contains("wit-colored")) && ((_b = node.textContent) == null ? void 0 : _b.trim())) {
+            allTextNodes.push(node);
+          }
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          const el = node;
+          if (SKIP_TAGS.has(el.tagName) || ((_c = el.classList) == null ? void 0 : _c.contains("wit-colored-wrapper")) || ((_d = el.classList) == null ? void 0 : _d.contains("wit-panel-container")) || ((_e = el.classList) == null ? void 0 : _e.contains("wit-gaze-overlay")))
+            continue;
+          allTextNodes.push(...getTextNodes(el));
+        }
+      }
+      if (allTextNodes.length === 0) return;
+      const batches = batchTextNodes(allTextNodes, 80);
+      for (const batch of batches) {
+        const texts = batch.map((n) => n.textContent || "");
+        try {
+          const response = await colorizeBatch(
+            texts,
+            activeScheme,
+            activeEmphasis,
+            activeShowFunctionWords
+          );
+          for (let i = 0; i < batch.length; i++) {
+            const sentences = response.results[i];
+            if (sentences && sentences.length > 0) {
+              const record = replaceTextNode(batch[i], sentences);
+              if (record) coloredNodes.push(record);
+            }
+          }
+        } catch (err) {
+          console.error("[WIT] Mutation batch colorize error:", err);
+        }
+      }
+    } finally {
+      isColorizing = false;
+    }
+  }
+  function startMutationObserver() {
+    stopMutationObserver();
+    mutationObserver = new MutationObserver((mutations) => {
+      var _a, _b, _c;
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node.nodeType === Node.ELEMENT_NODE && (((_a = node.classList) == null ? void 0 : _a.contains("wit-colored-wrapper")) || ((_b = node.classList) == null ? void 0 : _b.contains("wit-colored")) || ((_c = node.classList) == null ? void 0 : _c.contains("wit-panel-container")) || node.id === "wit-panel-container" || node.id === "wit-panel-iframe"))
+            continue;
+          pendingMutationNodes.add(node);
+        }
+      }
+      if (pendingMutationNodes.size > 0) {
+        if (mutationTimer) clearTimeout(mutationTimer);
+        mutationTimer = setTimeout(() => {
+          const nodes = Array.from(pendingMutationNodes);
+          pendingMutationNodes.clear();
+          colorizeNodes(nodes);
+        }, 500);
+      }
+    });
+    mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  }
+  function stopMutationObserver() {
+    if (mutationTimer) {
+      clearTimeout(mutationTimer);
+      mutationTimer = null;
+    }
+    pendingMutationNodes.clear();
+    if (mutationObserver) {
+      mutationObserver.disconnect();
+      mutationObserver = null;
+    }
   }
   let gazeCallback = null;
   let mouseMoveHandler = null;
@@ -583,8 +675,8 @@
     panelIframe.id = "wit-panel-iframe";
     panelIframe.style.cssText = `
     position: fixed;
-    top: 0; right: 0; bottom: 0;
-    width: 400px;
+    bottom: 0; right: 0;
+    width: 340px;
     height: 100vh;
     border: none;
     z-index: 999999;
@@ -602,6 +694,19 @@
     if (((_a = event.data) == null ? void 0 : _a.source) !== "wit-panel") return;
     const msg = event.data;
     switch (msg.type) {
+      case "PANEL_RESIZE":
+        if (panelIframe) {
+          if (msg.isOpen) {
+            panelIframe.style.width = "340px";
+            panelIframe.style.height = "100vh";
+            panelIframe.style.pointerEvents = "auto";
+          } else {
+            panelIframe.style.width = "80px";
+            panelIframe.style.height = "80px";
+            panelIframe.style.pointerEvents = "auto";
+          }
+        }
+        break;
       case "TOGGLE_COLOR_CODING":
         colorSettings = {
           enabled: msg.enabled,

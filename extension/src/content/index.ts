@@ -49,8 +49,8 @@ function injectPanel(): void {
   panelIframe.id = "wit-panel-iframe";
   panelIframe.style.cssText = `
     position: fixed;
-    top: 0; right: 0; bottom: 0;
-    width: 400px;
+    bottom: 0; right: 0;
+    width: 340px;
     height: 100vh;
     border: none;
     z-index: 999999;
@@ -75,6 +75,21 @@ function handlePanelMessage(event: MessageEvent): void {
   const msg = event.data;
 
   switch (msg.type) {
+    case "PANEL_RESIZE":
+      if (panelIframe) {
+        if (msg.isOpen) {
+          // Expanded panel — generous click area
+          panelIframe.style.width = "340px";
+          panelIframe.style.height = "100vh";
+          panelIframe.style.pointerEvents = "auto";
+        } else {
+          // Minimized — shrink iframe to just the small icon area + room for hover scale & shadow
+          panelIframe.style.width = "80px";
+          panelIframe.style.height = "80px";
+          panelIframe.style.pointerEvents = "auto";
+        }
+      }
+      break;
     case "TOGGLE_COLOR_CODING":
       colorSettings = {
         enabled: msg.enabled,

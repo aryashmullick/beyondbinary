@@ -50,6 +50,14 @@ interface OriginalNode {
 let coloredNodes: OriginalNode[] = [];
 let isColorizing = false;
 
+// MutationObserver for dynamic content
+let mutationObserver: MutationObserver | null = null;
+let pendingMutationNodes: Set<Node> = new Set();
+let mutationTimer: ReturnType<typeof setTimeout> | null = null;
+let activeScheme = "default";
+let activeEmphasis = "normal";
+let activeShowFunctionWords = true;
+
 /**
  * Extract text content from visible text nodes.
  */
@@ -167,6 +175,11 @@ export async function colorizeDocument(
   if (isColorizing) return;
   isColorizing = true;
 
+  // Store active settings for mutation observer
+  activeScheme = scheme;
+  activeEmphasis = emphasis;
+  activeShowFunctionWords = showFunctionWords;
+
   try {
     // First, clean up any previous colorization
     removeColorization();
@@ -207,6 +220,9 @@ export async function colorizeDocument(
       processed += batch.length;
       onProgress?.(processed / textNodes.length);
     }
+
+    // Start watching for new content
+    startMutationObserver();
   } finally {
     isColorizing = false;
   }
@@ -216,6 +232,9 @@ export async function colorizeDocument(
  * Remove all colorization and restore original text nodes.
  */
 export function removeColorization(): void {
+  // Stop watching for new content
+  stopMutationObserver();
+
   for (const record of coloredNodes) {
     try {
       if (record.replacement.parentNode) {
@@ -259,4 +278,124 @@ export function recolorize(
  */
 export function isColorized(): boolean {
   return coloredNodes.length > 0;
+}
+
+// ─── MutationObserver for dynamic content ──────────────────────────────────────
+
+/**
+ * Colorize only the new nodes that were added dynamically.
+ */
+async function colorizeNodes(nodes: Node[]): Promise<void> {
+  if (isColorizing) return;
+  isColorizing = true;
+
+  try {
+    const allTextNodes: Text[] = [];
+    for (const node of nodes) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        // Single text node added
+        const parent = (node as Text).parentElement;
+        if (
+          parent &&
+          !SKIP_TAGS.has(parent.tagName) &&
+          !parent.closest(".wit-colored-wrapper") &&
+          !parent.classList?.contains("wit-colored") &&
+          node.textContent?.trim()
+        ) {
+          allTextNodes.push(node as Text);
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node as Element;
+        if (
+          SKIP_TAGS.has(el.tagName) ||
+          el.classList?.contains("wit-colored-wrapper") ||
+          el.classList?.contains("wit-panel-container") ||
+          el.classList?.contains("wit-gaze-overlay")
+        )
+          continue;
+        allTextNodes.push(...getTextNodes(el));
+      }
+    }
+
+    if (allTextNodes.length === 0) return;
+
+    const batches = batchTextNodes(allTextNodes, 80);
+    for (const batch of batches) {
+      const texts = batch.map((n) => n.textContent || "");
+      try {
+        const response = await colorizeBatch(
+          texts,
+          activeScheme,
+          activeEmphasis,
+          activeShowFunctionWords,
+        );
+        for (let i = 0; i < batch.length; i++) {
+          const sentences = response.results[i];
+          if (sentences && sentences.length > 0) {
+            const record = replaceTextNode(batch[i], sentences);
+            if (record) coloredNodes.push(record);
+          }
+        }
+      } catch (err) {
+        console.error("[WIT] Mutation batch colorize error:", err);
+      }
+    }
+  } finally {
+    isColorizing = false;
+  }
+}
+
+/**
+ * Start observing the DOM for new content.
+ */
+function startMutationObserver(): void {
+  stopMutationObserver();
+
+  mutationObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        // Skip our own elements
+        if (
+          node.nodeType === Node.ELEMENT_NODE &&
+          ((node as Element).classList?.contains("wit-colored-wrapper") ||
+            (node as Element).classList?.contains("wit-colored") ||
+            (node as Element).classList?.contains("wit-panel-container") ||
+            (node as Element).id === "wit-panel-container" ||
+            (node as Element).id === "wit-panel-iframe")
+        )
+          continue;
+        pendingMutationNodes.add(node);
+      }
+    }
+
+    if (pendingMutationNodes.size > 0) {
+      // Debounce: wait for rapid DOM changes to settle
+      if (mutationTimer) clearTimeout(mutationTimer);
+      mutationTimer = setTimeout(() => {
+        const nodes = Array.from(pendingMutationNodes);
+        pendingMutationNodes.clear();
+        colorizeNodes(nodes);
+      }, 500);
+    }
+  });
+
+  mutationObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+}
+
+/**
+ * Stop observing the DOM.
+ */
+function stopMutationObserver(): void {
+  if (mutationTimer) {
+    clearTimeout(mutationTimer);
+    mutationTimer = null;
+  }
+  pendingMutationNodes.clear();
+  if (mutationObserver) {
+    mutationObserver.disconnect();
+    mutationObserver = null;
+  }
 }

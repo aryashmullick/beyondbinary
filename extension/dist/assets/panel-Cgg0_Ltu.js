@@ -20386,7 +20386,15 @@ const Pill = ({ active, onClick, children, color: color2 }) => /* @__PURE__ */ j
   {
     onClick,
     className: "flex-1 py-[6px] rounded-lg text-[13px] font-display font-semibold transition-all duration-200",
-    style: active ? { background: color2 || "#4A6FA5", color: "#fff", boxShadow: `0 2px 8px ${color2 || "#4A6FA5"}33` } : { background: "#F5F0E8", color: "#8A8078", border: "1px solid #E8E0D4" },
+    style: active ? {
+      background: color2 || "#4A6FA5",
+      color: "#fff",
+      boxShadow: `0 2px 8px ${color2 || "#4A6FA5"}33`
+    } : {
+      background: "#F5F0E8",
+      color: "#8A8078",
+      border: "1px solid #E8E0D4"
+    },
     children
   }
 );
@@ -20434,12 +20442,24 @@ const ColorCodingSettings = ({
                 style: {
                   background: enabled ? "linear-gradient(135deg, #4A6FA5, #6B9E6B)" : "#E2D9CA"
                 },
-                children: /* @__PURE__ */ jsxRuntimeExports.jsx(Palette, { className: `w-[18px] h-[18px] ${enabled ? "text-white" : "text-stone-400"}` })
+                children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Palette,
+                  {
+                    className: `w-[18px] h-[18px] ${enabled ? "text-white" : "text-stone-400"}`
+                  }
+                )
               }
             ),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display font-bold text-[15px] leading-tight text-stone-800", children: "Color Coding" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-[12px] mt-0.5", style: { color: enabled ? "#5A8F5A" : "#B0A89C" }, children: enabled ? isProcessing ? "Processing…" : "Active" : "Off" })
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "p",
+                {
+                  className: "font-display text-[12px] mt-0.5",
+                  style: { color: enabled ? "#5A8F5A" : "#B0A89C" },
+                  children: enabled ? isProcessing ? "Processing…" : "Active" : "Off"
+                }
+              )
             ] })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(Switch, { checked: enabled, onCheckedChange: onToggle })
@@ -20458,17 +20478,65 @@ const ColorCodingSettings = ({
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { children: "Theme" }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Pill, { active: scheme === "default", onClick: () => onSchemeChange("default"), color: "#4A6FA5", children: "Default" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Pill, { active: scheme === "high_contrast", onClick: () => onSchemeChange("high_contrast"), color: "#C75C5C", children: "Vivid" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Pill, { active: scheme === "pastel", onClick: () => onSchemeChange("pastel"), color: "#9B7DC4", children: "Pastel" })
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                Pill,
+                {
+                  active: scheme === "default",
+                  onClick: () => onSchemeChange("default"),
+                  color: "#4A6FA5",
+                  children: "Default"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                Pill,
+                {
+                  active: scheme === "high_contrast",
+                  onClick: () => onSchemeChange("high_contrast"),
+                  color: "#C75C5C",
+                  children: "Vivid"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                Pill,
+                {
+                  active: scheme === "pastel",
+                  onClick: () => onSchemeChange("pastel"),
+                  color: "#9B7DC4",
+                  children: "Pastel"
+                }
+              )
             ] })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { children: "Emphasis" }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Pill, { active: emphasis === "normal", onClick: () => onEmphasisChange("normal"), color: "#4A8A4A", children: "Light" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Pill, { active: emphasis === "medium", onClick: () => onEmphasisChange("medium"), color: "#D4952E", children: "Medium" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Pill, { active: emphasis === "high", onClick: () => onEmphasisChange("high"), color: "#C75C5C", children: "Strong" })
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                Pill,
+                {
+                  active: emphasis === "normal",
+                  onClick: () => onEmphasisChange("normal"),
+                  color: "#4A8A4A",
+                  children: "Light"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                Pill,
+                {
+                  active: emphasis === "medium",
+                  onClick: () => onEmphasisChange("medium"),
+                  color: "#D4952E",
+                  children: "Medium"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                Pill,
+                {
+                  active: emphasis === "high",
+                  onClick: () => onEmphasisChange("high"),
+                  color: "#C75C5C",
+                  children: "Strong"
+                }
+              )
             ] })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
@@ -20522,17 +20590,27 @@ const ColorCodingSettings = ({
                 "div",
                 {
                   className: "grid grid-cols-2 gap-x-3 gap-y-1.5 px-3 py-2.5 rounded-lg",
-                  style: { background: "#F9F5EE", border: "1px solid #E8E0D4" },
-                  children: legend.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      "div",
-                      {
-                        className: "w-3 h-3 rounded-full flex-shrink-0",
-                        style: { backgroundColor: item.color }
-                      }
-                    ),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-[12px] text-stone-600 truncate", children: item.label })
-                  ] }, item.category))
+                  style: {
+                    background: "#F9F5EE",
+                    border: "1px solid #E8E0D4"
+                  },
+                  children: legend.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                    "div",
+                    {
+                      className: "flex items-center gap-2",
+                      children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          "div",
+                          {
+                            className: "w-3 h-3 rounded-full flex-shrink-0",
+                            style: { backgroundColor: item.color }
+                          }
+                        ),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display text-[12px] text-stone-600 truncate", children: item.label })
+                      ]
+                    },
+                    item.category
+                  ))
                 }
               )
             }
@@ -20564,7 +20642,13 @@ const ColorCodingSettings = ({
                       }
                     )
                   ] }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(Switch, { checked: directorEnabled, onCheckedChange: onDirectorToggle })
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    Switch,
+                    {
+                      checked: directorEnabled,
+                      onCheckedChange: onDirectorToggle
+                    }
+                  )
                 ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { children: directorEnabled && /* @__PURE__ */ jsxRuntimeExports.jsx(
                   motion.div,
@@ -20575,9 +20659,33 @@ const ColorCodingSettings = ({
                     transition: { duration: 0.2 },
                     className: "overflow-hidden",
                     children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "px-4 pb-3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(Pill, { active: crowdingIntensity === "low", onClick: () => onCrowdingIntensityChange("low"), color: "#4A8A4A", children: "Subtle" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(Pill, { active: crowdingIntensity === "medium", onClick: () => onCrowdingIntensityChange("medium"), color: "#4A6FA5", children: "Medium" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(Pill, { active: crowdingIntensity === "high", onClick: () => onCrowdingIntensityChange("high"), color: "#D4952E", children: "Strong" })
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        Pill,
+                        {
+                          active: crowdingIntensity === "low",
+                          onClick: () => onCrowdingIntensityChange("low"),
+                          color: "#4A8A4A",
+                          children: "Subtle"
+                        }
+                      ),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        Pill,
+                        {
+                          active: crowdingIntensity === "medium",
+                          onClick: () => onCrowdingIntensityChange("medium"),
+                          color: "#4A6FA5",
+                          children: "Medium"
+                        }
+                      ),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        Pill,
+                        {
+                          active: crowdingIntensity === "high",
+                          onClick: () => onCrowdingIntensityChange("high"),
+                          color: "#D4952E",
+                          children: "Strong"
+                        }
+                      )
                     ] }) })
                   }
                 ) })
@@ -20777,8 +20885,16 @@ const App = () => {
         emphasis,
         showFunctionWords
       });
+      if (!enabled && directorModeEnabled) {
+        setDirectorModeEnabled(false);
+        sendToContent({
+          type: "TOGGLE_DIRECTOR_MODE",
+          enabled: false,
+          crowdingIntensity
+        });
+      }
     },
-    [colorScheme, emphasis, showFunctionWords]
+    [colorScheme, emphasis, showFunctionWords, directorModeEnabled, crowdingIntensity]
   );
   const handleSchemeChange = reactExports.useCallback(
     (scheme) => {
@@ -20845,6 +20961,12 @@ const App = () => {
     },
     [directorModeEnabled]
   );
+  reactExports.useEffect(() => {
+    window.parent.postMessage(
+      { source: "wit-panel", type: "PANEL_RESIZE", isOpen },
+      "*"
+    );
+  }, [isOpen]);
   const isAnythingActive = colorCodingEnabled || directorModeEnabled;
   return /* @__PURE__ */ jsxRuntimeExports.jsx(TooltipProvider, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { mode: "wait", children: isOpen ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
     motion.div,
@@ -20884,7 +21006,11 @@ const App = () => {
                   motion.div,
                   {
                     animate: { rotate: 360 },
-                    transition: { duration: 1.5, repeat: Infinity, ease: "linear" },
+                    transition: {
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "linear"
+                    },
                     children: /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { className: "w-3.5 h-3.5 text-amber-500" })
                   }
                 )
@@ -20901,7 +21027,85 @@ const App = () => {
             ]
           }
         ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overflow-y-auto wit-scrollbar px-4 py-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overflow-y-auto wit-scrollbar px-4 py-3", children: !backendConnected ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center justify-center py-6 gap-3 text-center", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: "w-10 h-10 rounded-full flex items-center justify-center",
+              style: { background: "rgba(199,92,92,0.1)" },
+              children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "svg",
+                {
+                  width: "20",
+                  height: "20",
+                  viewBox: "0 0 24 24",
+                  fill: "none",
+                  stroke: "#C75C5C",
+                  strokeWidth: "2",
+                  strokeLinecap: "round",
+                  strokeLinejoin: "round",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "1", y1: "1", x2: "23", y2: "23" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M16.72 11.06A10.94 10.94 0 0 1 19 12.55" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M5 12.55a10.94 10.94 0 0 1 5.17-2.39" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M10.71 5.05A16 16 0 0 1 22.56 9" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M1.42 9a15.91 15.91 0 0 1 4.7-2.88" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M8.53 16.11a6 6 0 0 1 6.95 0" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "12", y1: "20", x2: "12.01", y2: "20" })
+                  ]
+                }
+              )
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "p",
+              {
+                className: "font-display font-bold text-[14px]",
+                style: { color: "#6B5E50" },
+                children: "Backend Offline"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "p",
+              {
+                className: "font-display text-[12px] mt-1 leading-relaxed",
+                style: { color: "#A89E92" },
+                children: [
+                  "WIT can't work without the backend server.",
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+                  "Please start it and try again."
+                ]
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: async () => {
+                const healthy = await checkHealth();
+                setBackendConnected(healthy);
+                if (healthy) {
+                  const legendData = await getLegend(colorScheme);
+                  setLegend(legendData);
+                }
+              },
+              className: "mt-1 px-4 py-1.5 rounded-full font-display font-semibold text-[12px] transition-all",
+              style: {
+                background: "#F5F0E8",
+                color: "#8A8078",
+                border: "1px solid #E2D9CA"
+              },
+              onMouseEnter: (e) => {
+                e.currentTarget.style.background = "#EDE6D8";
+              },
+              onMouseLeave: (e) => {
+                e.currentTarget.style.background = "#F5F0E8";
+              },
+              children: "Retry Connection"
+            }
+          )
+        ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
           ColorCodingSettings,
           {
             enabled: colorCodingEnabled,

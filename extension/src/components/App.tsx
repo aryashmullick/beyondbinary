@@ -108,8 +108,24 @@ export const App: React.FC = () => {
         emphasis,
         showFunctionWords,
       });
+
+      // When turning off color coding, also turn off Director Mode
+      if (!enabled && directorModeEnabled) {
+        setDirectorModeEnabled(false);
+        sendToContent({
+          type: "TOGGLE_DIRECTOR_MODE",
+          enabled: false,
+          crowdingIntensity,
+        });
+      }
     },
-    [colorScheme, emphasis, showFunctionWords],
+    [
+      colorScheme,
+      emphasis,
+      showFunctionWords,
+      directorModeEnabled,
+      crowdingIntensity,
+    ],
   );
 
   const handleSchemeChange = useCallback(
@@ -182,6 +198,15 @@ export const App: React.FC = () => {
     [directorModeEnabled],
   );
 
+  // ─── Notify parent iframe about panel size ────────────────────────────────
+
+  useEffect(() => {
+    window.parent.postMessage(
+      { source: "wit-panel", type: "PANEL_RESIZE", isOpen },
+      "*",
+    );
+  }, [isOpen]);
+
   // ─── Render ────────────────────────────────────────────────────────────────
 
   const isAnythingActive = colorCodingEnabled || directorModeEnabled;
@@ -246,23 +271,91 @@ export const App: React.FC = () => {
 
             {/* ─── Content ────────────────────────────────────────────── */}
             <div className="overflow-y-auto wit-scrollbar px-4 py-3">
-              <ColorCodingSettings
-                enabled={colorCodingEnabled}
-                onToggle={handleColorToggle}
-                scheme={colorScheme}
-                onSchemeChange={handleSchemeChange}
-                emphasis={emphasis}
-                onEmphasisChange={handleEmphasisChange}
-                showFunctionWords={showFunctionWords}
-                onShowFunctionWordsChange={handleShowFunctionWordsChange}
-                legend={legend}
-                isProcessing={isProcessing}
-                directorEnabled={directorModeEnabled}
-                onDirectorToggle={handleDirectorToggle}
-                isTracking={isTracking}
-                crowdingIntensity={crowdingIntensity}
-                onCrowdingIntensityChange={handleCrowdingChange}
-              />
+              {!backendConnected ? (
+                <div className="flex flex-col items-center justify-center py-6 gap-3 text-center">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center"
+                    style={{ background: "rgba(199,92,92,0.1)" }}
+                  >
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#C75C5C"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                      <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />
+                      <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" />
+                      <path d="M10.71 5.05A16 16 0 0 1 22.56 9" />
+                      <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88" />
+                      <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                      <line x1="12" y1="20" x2="12.01" y2="20" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p
+                      className="font-display font-bold text-[14px]"
+                      style={{ color: "#6B5E50" }}
+                    >
+                      Backend Offline
+                    </p>
+                    <p
+                      className="font-display text-[12px] mt-1 leading-relaxed"
+                      style={{ color: "#A89E92" }}
+                    >
+                      WIT can't work without the backend server.
+                      <br />
+                      Please start it and try again.
+                    </p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      const healthy = await checkHealth();
+                      setBackendConnected(healthy);
+                      if (healthy) {
+                        const legendData = await getLegend(colorScheme);
+                        setLegend(legendData);
+                      }
+                    }}
+                    className="mt-1 px-4 py-1.5 rounded-full font-display font-semibold text-[12px] transition-all"
+                    style={{
+                      background: "#F5F0E8",
+                      color: "#8A8078",
+                      border: "1px solid #E2D9CA",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "#EDE6D8";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "#F5F0E8";
+                    }}
+                  >
+                    Retry Connection
+                  </button>
+                </div>
+              ) : (
+                <ColorCodingSettings
+                  enabled={colorCodingEnabled}
+                  onToggle={handleColorToggle}
+                  scheme={colorScheme}
+                  onSchemeChange={handleSchemeChange}
+                  emphasis={emphasis}
+                  onEmphasisChange={handleEmphasisChange}
+                  showFunctionWords={showFunctionWords}
+                  onShowFunctionWordsChange={handleShowFunctionWordsChange}
+                  legend={legend}
+                  isProcessing={isProcessing}
+                  directorEnabled={directorModeEnabled}
+                  onDirectorToggle={handleDirectorToggle}
+                  isTracking={isTracking}
+                  crowdingIntensity={crowdingIntensity}
+                  onCrowdingIntensityChange={handleCrowdingChange}
+                />
+              )}
             </div>
 
             {/* ─── Footer ─────────────────────────────────────────────── */}
