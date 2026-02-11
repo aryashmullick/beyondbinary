@@ -25,7 +25,7 @@
 @layer utilities {
   .wit-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: #D6CCBC transparent;
+    scrollbar-color: #d6ccbc transparent;
   }
 
   .wit-scrollbar::-webkit-scrollbar {
@@ -37,11 +37,11 @@
   }
 
   .wit-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #D6CCBC;
+    background-color: #d6ccbc;
     border-radius: 20px;
   }
 
   .wit-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: #C4B8A6;
+    background-color: #c4b8a6;
   }
 }

@@ -35,8 +35,16 @@ const Pill: React.FC<{
     className="flex-1 py-[6px] rounded-lg text-[13px] font-display font-semibold transition-all duration-200"
     style={
       active
-        ? { background: color || "#4A6FA5", color: "#fff", boxShadow: `0 2px 8px ${color || "#4A6FA5"}33` }
-        : { background: "#F5F0E8", color: "#8A8078", border: "1px solid #E8E0D4" }
+        ? {
+            background: color || "#4A6FA5",
+            color: "#fff",
+            boxShadow: `0 2px 8px ${color || "#4A6FA5"}33`,
+          }
+        : {
+            background: "#F5F0E8",
+            color: "#8A8078",
+            border: "1px solid #E8E0D4",
+          }
     }
   >
     {children}
@@ -46,8 +54,10 @@ const Pill: React.FC<{
 // ─── Section Label ─────────────────────────────────────────────────────────────
 
 const Label: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p className="font-display font-semibold text-[11px] uppercase tracking-wider mb-2"
-    style={{ color: "#B0A89C" }}>
+  <p
+    className="font-display font-semibold text-[11px] uppercase tracking-wider mb-2"
+    style={{ color: "#B0A89C" }}
+  >
     {children}
   </p>
 );
@@ -94,13 +104,18 @@ export const ColorCodingSettings: React.FC<ColorCodingSettingsProps> = ({
                 : "#E2D9CA",
             }}
           >
-            <Palette className={`w-[18px] h-[18px] ${enabled ? "text-white" : "text-stone-400"}`} />
+            <Palette
+              className={`w-[18px] h-[18px] ${enabled ? "text-white" : "text-stone-400"}`}
+            />
           </div>
           <div>
             <p className="font-display font-bold text-[15px] leading-tight text-stone-800">
               Color Coding
             </p>
-            <p className="font-display text-[12px] mt-0.5" style={{ color: enabled ? "#5A8F5A" : "#B0A89C" }}>
+            <p
+              className="font-display text-[12px] mt-0.5"
+              style={{ color: enabled ? "#5A8F5A" : "#B0A89C" }}
+            >
               {enabled ? (isProcessing ? "Processing\u2026" : "Active") : "Off"}
             </p>
           </div>
@@ -122,13 +137,25 @@ export const ColorCodingSettings: React.FC<ColorCodingSettingsProps> = ({
               <div>
                 <Label>Theme</Label>
                 <div className="flex gap-2">
-                  <Pill active={scheme === "default"} onClick={() => onSchemeChange("default")} color="#4A6FA5">
+                  <Pill
+                    active={scheme === "default"}
+                    onClick={() => onSchemeChange("default")}
+                    color="#4A6FA5"
+                  >
                     Default
                   </Pill>
-                  <Pill active={scheme === "high_contrast"} onClick={() => onSchemeChange("high_contrast")} color="#C75C5C">
+                  <Pill
+                    active={scheme === "high_contrast"}
+                    onClick={() => onSchemeChange("high_contrast")}
+                    color="#C75C5C"
+                  >
                     Vivid
                   </Pill>
-                  <Pill active={scheme === "pastel"} onClick={() => onSchemeChange("pastel")} color="#9B7DC4">
+                  <Pill
+                    active={scheme === "pastel"}
+                    onClick={() => onSchemeChange("pastel")}
+                    color="#9B7DC4"
+                  >
                     Pastel
                   </Pill>
                 </div>
@@ -138,13 +165,25 @@ export const ColorCodingSettings: React.FC<ColorCodingSettingsProps> = ({
               <div>
                 <Label>Emphasis</Label>
                 <div className="flex gap-2">
-                  <Pill active={emphasis === "normal"} onClick={() => onEmphasisChange("normal")} color="#4A8A4A">
+                  <Pill
+                    active={emphasis === "normal"}
+                    onClick={() => onEmphasisChange("normal")}
+                    color="#4A8A4A"
+                  >
                     Light
                   </Pill>
-                  <Pill active={emphasis === "medium"} onClick={() => onEmphasisChange("medium")} color="#D4952E">
+                  <Pill
+                    active={emphasis === "medium"}
+                    onClick={() => onEmphasisChange("medium")}
+                    color="#D4952E"
+                  >
                     Medium
                   </Pill>
-                  <Pill active={emphasis === "high"} onClick={() => onEmphasisChange("high")} color="#C75C5C">
+                  <Pill
+                    active={emphasis === "high"}
+                    onClick={() => onEmphasisChange("high")}
+                    color="#C75C5C"
+                  >
                     Strong
                   </Pill>
                 </div>
@@ -156,7 +195,9 @@ export const ColorCodingSettings: React.FC<ColorCodingSettingsProps> = ({
                   onClick={() => onShowFunctionWordsChange(!showFunctionWords)}
                   className="flex-1 flex items-center justify-center gap-1.5 py-[6px] rounded-lg text-[13px] font-display font-medium transition-all"
                   style={{
-                    background: showFunctionWords ? "rgba(232,168,56,0.12)" : "#F5F0E8",
+                    background: showFunctionWords
+                      ? "rgba(232,168,56,0.12)"
+                      : "#F5F0E8",
                     color: showFunctionWords ? "#C8922A" : "#B0A89C",
                     border: `1px solid ${showFunctionWords ? "rgba(232,168,56,0.25)" : "#E8E0D4"}`,
                   }}
@@ -189,10 +230,18 @@ export const ColorCodingSettings: React.FC<ColorCodingSettingsProps> = ({
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden"
                   >
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 px-3 py-2.5 rounded-lg"
-                      style={{ background: "#F9F5EE", border: "1px solid #E8E0D4" }}>
+                    <div
+                      className="grid grid-cols-2 gap-x-3 gap-y-1.5 px-3 py-2.5 rounded-lg"
+                      style={{
+                        background: "#F9F5EE",
+                        border: "1px solid #E8E0D4",
+                      }}
+                    >
                       {legend.map((item) => (
-                        <div key={item.category} className="flex items-center gap-2">
+                        <div
+                          key={item.category}
+                          className="flex items-center gap-2"
+                        >
                           <div
                             className="w-3 h-3 rounded-full flex-shrink-0"
                             style={{ backgroundColor: item.color }}
@@ -234,7 +283,10 @@ export const ColorCodingSettings: React.FC<ColorCodingSettingsProps> = ({
                       </motion.div>
                     )}
                   </div>
-                  <Switch checked={directorEnabled} onCheckedChange={onDirectorToggle} />
+                  <Switch
+                    checked={directorEnabled}
+                    onCheckedChange={onDirectorToggle}
+                  />
                 </div>
 
                 <AnimatePresence>
@@ -248,13 +300,25 @@ export const ColorCodingSettings: React.FC<ColorCodingSettingsProps> = ({
                     >
                       <div className="px-4 pb-3">
                         <div className="flex gap-2">
-                          <Pill active={crowdingIntensity === "low"} onClick={() => onCrowdingIntensityChange("low")} color="#4A8A4A">
+                          <Pill
+                            active={crowdingIntensity === "low"}
+                            onClick={() => onCrowdingIntensityChange("low")}
+                            color="#4A8A4A"
+                          >
                             Subtle
                           </Pill>
-                          <Pill active={crowdingIntensity === "medium"} onClick={() => onCrowdingIntensityChange("medium")} color="#4A6FA5">
+                          <Pill
+                            active={crowdingIntensity === "medium"}
+                            onClick={() => onCrowdingIntensityChange("medium")}
+                            color="#4A6FA5"
+                          >
                             Medium
                           </Pill>
-                          <Pill active={crowdingIntensity === "high"} onClick={() => onCrowdingIntensityChange("high")} color="#D4952E">
+                          <Pill
+                            active={crowdingIntensity === "high"}
+                            onClick={() => onCrowdingIntensityChange("high")}
+                            color="#D4952E"
+                          >
                             Strong
                           </Pill>
                         </div>

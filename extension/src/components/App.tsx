@@ -201,18 +201,21 @@ export const App: React.FC = () => {
               fontFamily: '"Inter", system-ui, sans-serif',
               background: "#FEFCF8",
               border: "1px solid #E2D9CA",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06)",
+              boxShadow:
+                "0 4px 24px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06)",
             }}
           >
             {/* ─── Compact Title Bar ─────────────────────────────────── */}
-            <div className="flex items-center justify-between px-4 py-2"
+            <div
+              className="flex items-center justify-between px-4 py-2"
               style={{ borderBottom: "1px solid #EDE6D8" }}
             >
               <div className="flex items-center gap-2">
                 <h1
                   className="font-display font-extrabold text-[15px] tracking-tight"
                   style={{
-                    background: "linear-gradient(135deg, #4A6FA5, #6B9E6B, #E8A838)",
+                    background:
+                      "linear-gradient(135deg, #4A6FA5, #6B9E6B, #E8A838)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                   }}
@@ -222,7 +225,11 @@ export const App: React.FC = () => {
                 {isProcessing && (
                   <motion.div
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                   </motion.div>
