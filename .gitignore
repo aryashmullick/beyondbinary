@@ -1,0 +1,36 @@
+# ─── Python ─────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+.env
+
+# NLTK data (downloaded at runtime)
+nltk_data/
+
+# ─── Node / Extension ──────────────────────────────────────────────────────────
+node_modules/
+extension/dist/
+extension/.vite/
+*.tsbuildinfo
+
+# ─── IDE ────────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── OS ─────────────────────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
